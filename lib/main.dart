@@ -30,7 +30,6 @@ class LibraryAnimeApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
 
-      home: const SplashScreen(),
 
     );
   }

@@ -159,7 +159,7 @@ SplashScreen
 
 | Recurso | Enlace |
 |---|---|
-| 🎥 Video de exposición | `[INSERTAR ENLACE AL VIDEO]` |
+| 🎥 Video de exposición | `https://youtu.be/HEcZDg0Odvw` |
 | 📊 Presentación de slides | `https://docs.google.com/presentation/d/1jzPum2vKqLOSTuNNQ6K7FpJ8ouvKx_wK/edit?usp=sharing&ouid=116373422622507881907&rtpof=true&sd=true` |
 | 📦 Repositorio | `https://github.com/IchiroCTG/AnimeLibrary_DM2026.git` |
 

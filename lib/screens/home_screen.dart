@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/anime.dart';
 import '../models/anime_data.dart';
-import '../navigation/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/anime_card.dart';
 import '../widgets/genre_chip.dart';
-import '../widgets/rating_bar.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

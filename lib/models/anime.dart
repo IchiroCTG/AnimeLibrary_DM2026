@@ -3,6 +3,7 @@ class Anime{
   final String title;
   final String originalTitle; // titulo en japones / romaji
   final String synopsis; 
+  final String studio;
   final String coverUrl; // portada
   final double rating; // 0.0 - 10.0
   final int releaseYear; // año de estreno
@@ -25,6 +26,7 @@ class Anime{
     required this.status,
     required this.genres,
     required this.platforms,
+    required this.studio,
     this.trailerUrl,
     this.tags = const [],
   });

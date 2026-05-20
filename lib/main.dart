@@ -37,7 +37,7 @@ class LibraryAnimeApp extends StatelessWidget {
       title: 'Library Anime',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      initialRoute: AppRoutes.splash,
+      initialRoute: AppRoutes.poc,
       onGenerateRoute: AppRoutes.generateRoute,
     );
   }

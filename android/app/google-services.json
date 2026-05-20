@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "802064574489",
+    "project_id": "library-anime-88d29",
+    "storage_bucket": "library-anime-88d29.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:802064574489:android:5fc8750e22ed01e42de288",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNQRChthPrivWSg8WeguqxqGX1GoU0QGw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

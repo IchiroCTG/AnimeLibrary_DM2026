@@ -1,10 +1,29 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'firebase_options.dart';
+import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'navigation/app_routes.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  WidgetsFlutterBinding.ensureInitialized;
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xFF0D0F1C),
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
 
   runApp(const LibraryAnimeApp());
 }
@@ -12,24 +31,14 @@ void main() {
 class LibraryAnimeApp extends StatelessWidget {
   const LibraryAnimeApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title:'Library Anime',
+      title: 'Library Anime',
       debugShowCheckedModeBanner: false,
-
-      // Tema global
       theme: AppTheme.dark,
-
-      //Rutas Centralizadas
-
       initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
-
-
     );
   }
 }
-
-

@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'firebase_options.dart';
-import 'screens/splash_screen.dart';
+
 import 'theme/app_theme.dart';
 import 'navigation/app_routes.dart';
 
@@ -37,7 +37,7 @@ class LibraryAnimeApp extends StatelessWidget {
       title: 'Library Anime',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      initialRoute: AppRoutes.poc,
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
     );
   }

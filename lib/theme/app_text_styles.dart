@@ -105,4 +105,10 @@ abstract final class AppTextStyles {
     color: AppColors.warning,
   );
 
+  static const TextStyle searchText = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textDisabled,
+  );
 }

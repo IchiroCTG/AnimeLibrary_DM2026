@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: TextField(
                         controller: _searchCtrl,
                         onChanged: vm.setQuery,
-                        style: AppTextStyles.bodyMedium,
+                        style: AppTextStyles.searchText,
                         decoration: InputDecoration(
                           hintText: 'Buscar por nombre, género, apodo...',
                           prefixIcon: const Icon(Icons.search_rounded,

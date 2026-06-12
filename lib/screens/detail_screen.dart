@@ -151,7 +151,7 @@ class DetailScreen extends StatelessWidget {
                               child: Text(
                                 anime.status.toUpperCase(),
                                 style: AppTextStyles.labelSmall.copyWith(
-                                  color: Colors.white,
+                                  color: Colors.black87,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                 ),

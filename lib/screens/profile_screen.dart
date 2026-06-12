@@ -35,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text('Editar nombre', style: AppTextStyles.headline3),
         content: TextField(
           controller: controller,
-          style: AppTextStyles.bodyMedium,
+          style: AppTextStyles.searchText,
           decoration: const InputDecoration(
             focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.primary),

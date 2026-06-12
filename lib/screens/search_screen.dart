@@ -61,7 +61,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _ctrl,
               onChanged: _search,
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.searchText,
               decoration: InputDecoration(
                 hintText: 'Nombre, apodo, japonés...',
                 prefixIcon: const Icon(Icons.search_rounded,

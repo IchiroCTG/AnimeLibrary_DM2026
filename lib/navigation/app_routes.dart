@@ -8,19 +8,21 @@ import '../screens/search_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/about_screen.dart';
+import '../screens/evaluation_screen.dart';
 import '../screens/poc/poc_screen.dart';
 import '../navigation/main_scalffold.dart';
 
 abstract final class AppRoutes {
-  static const String splash  = '/';
-  static const String main    = '/main';
-  static const String home    = '/home';
-  static const String detail  = '/detail';
-  static const String search  = '/search';
-  static const String profile = '/profile';
-  static const String help    = '/help';
-  static const String about   = '/about';
-  static const String poc     = '/poc';
+  static const String splash     = '/';
+  static const String main       = '/main';
+  static const String home       = '/home';
+  static const String detail     = '/detail';
+  static const String search     = '/search';
+  static const String profile    = '/profile';
+  static const String help       = '/help';
+  static const String about      = '/about';
+  static const String poc        = '/poc';
+  static const String evaluation = '/evaluation'; // ← nueva ruta
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -43,6 +45,8 @@ abstract final class AppRoutes {
         return _slide(const AboutScreen());
       case poc:
         return _slide(const PocScreen());
+      case evaluation:
+        return _slide(const EvaluationScreen());
       default:
         return _fade(const HomeScreen());
     }

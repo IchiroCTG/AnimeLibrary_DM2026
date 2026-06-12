@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../theme/app_colors.dart';
@@ -107,12 +108,61 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
     final avg = count > 0 ? (total / count).toStringAsFixed(1) : '0.0';
     buffer.writeln('Promedio general: $avg / 5.0');
 
-    await Share.share(
-      buffer.toString(),
-      subject: 'Evaluación Beta — Library Anime',
+    final String textoFinal = buffer.toString();
+    
+    // ── PRIMERA FORMA (CORREGIDA PARA MOSTRAR DESTINATARIO) ──
+    final String tuCorreo = 'gutierrezpablo121@gmail.com'; //
+    final String asunto = 'Evaluación Beta — Library Anime';
+
+    // Construimos la URI separando el correo (path) de las variables (query)
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: tuCorreo, // Esto asegura que aparezca en el campo "Para:"
+      query: encodeQueryParameters(<String, String>{
+        'subject': asunto,
+        'body': textoFinal,
+      }),
     );
 
+    try {
+      // PLAN A: Intentar abrir la aplicación de correo por defecto del sistema
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri);
+        setState(() => _submitted = true);
+      } else {
+        // PLAN B: Si el dispositivo no tiene app de correo configurada, usa Compartir
+        await _fallbackShare(textoFinal);
+      }
+    } catch (_) {
+      // Si ocurre un error inesperado, también ofrece Compartir como respaldo
+      await _fallbackShare(textoFinal);
+    }
+  }
+  Future<void> _fallbackShare(String texto) async {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se detectó app de correo. Elige cómo enviarlo:'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
+    // Abre el menú nativo (WhatsApp, Copiar, etc.) usando la sintaxis correcta de share_plus
+    await Share.share(
+      texto,
+      subject: 'Evaluación Beta — Library Anime',
+    );
+    
     setState(() => _submitted = true);
+  }
+
+  // Codificador para que el texto se procese bien en la URL del correo
+  String? encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 
   double get _overallAvg {

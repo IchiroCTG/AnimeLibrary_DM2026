@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
-  static const String _version = '1.0.0';
+  static const String _version = '1.0.1';
   static const String _year = '2026'; 
 
   @override
@@ -42,7 +42,7 @@ class AboutScreen extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.3)), 
                   ),
                   child: Text (
-                    'Maqueta Funcional · PDS1 2026',
+                    'Maqueta Funcional · PDS2 2026',
                     style:  AppTextStyles.labelSmall.copyWith(color: AppColors.primary)
                   )
                 )

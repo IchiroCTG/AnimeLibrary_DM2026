@@ -5,7 +5,7 @@ import '../models/anime.dart';
 import '../models/anime_data.dart';
 
 /// Persiste las listas del usuario usando shared_preferences.
-/// Clave: lista:<tipo>  →  valor: JSON con los IDs separados por coma
+/// Clave: lista:<tipo>  →  valor: IDs separados por coma
 class FavoritesViewModel extends ChangeNotifier {
   static const _keySaved     = 'list:saved';
   static const _keyWatching  = 'list:watching';
@@ -39,6 +39,7 @@ class FavoritesViewModel extends ChangeNotifier {
 
   // ── Cargar desde disco ────────────────────────────────────
   Future<void> load() async {
+    if (_loaded) return; // ← evita recargar si ya tiene datos en memoria
     final prefs = await SharedPreferences.getInstance();
     _saved    .addAll(_read(prefs, _keySaved));
     _watching .addAll(_read(prefs, _keyWatching));

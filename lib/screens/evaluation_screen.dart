@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -50,6 +49,8 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
   bool _loading = true;
   bool _submitted = false;
 
+  static const _destinatario = 'gutierrezpablo121@gmail.com';
+
   @override
   void initState() {
     super.initState();
@@ -57,10 +58,8 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
   }
 
   Future<void> _loadQuestions() async {
-    // Carga el JSON desde assets; si falla usa el JSON hardcodeado
     try {
-      final raw =
-          await rootBundle.loadString('assets/data/evaluation.json');
+      final raw = await rootBundle.loadString('assets/data/evaluation.json');
       _parseJson(raw);
     } catch (_) {
       _parseJson(_defaultJson);
@@ -87,81 +86,68 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
     return labels[key] ?? key;
   }
 
-  // ── Enviar por email ───────────────────────────────────────
-  Future<void> _sendResults() async {
+  // ── Construir texto del resultado ──────────────────────────
+  String _buildResultText() {
     final buffer = StringBuffer();
     buffer.writeln('=== Evaluación Beta — Library Anime ===\n');
-
     for (final section in _sections) {
       buffer.writeln('── ${section.name} ──');
       for (final q in section.questions) {
         final stars = '★' * q.valor.round() + '☆' * (5 - q.valor.round());
-        buffer.writeln('${q.titulo}');
+        buffer.writeln(q.titulo);
         buffer.writeln('Calificación: $stars (${q.valor.toStringAsFixed(0)}/5)\n');
       }
     }
-
-    final total = _sections
-        .expand((s) => s.questions)
-        .fold(0.0, (sum, q) => sum + q.valor);
+    final total = _sections.expand((s) => s.questions).fold(0.0, (sum, q) => sum + q.valor);
     final count = _sections.expand((s) => s.questions).length;
     final avg = count > 0 ? (total / count).toStringAsFixed(1) : '0.0';
     buffer.writeln('Promedio general: $avg / 5.0');
+    return buffer.toString();
+  }
 
-    final String textoFinal = buffer.toString();
-    
-    // ── PRIMERA FORMA (CORREGIDA PARA MOSTRAR DESTINATARIO) ──
-    final String tuCorreo = 'gutierrezpablo121@gmail.com'; //
-    final String asunto = 'Evaluación Beta — Library Anime';
+  // ── Enviar por email ───────────────────────────────────────
+  Future<void> _sendResults() async {
+    final texto = _buildResultText();
+    const asunto = 'Evaluación Beta — Library Anime';
 
-    // Construimos la URI separando el correo (path) de las variables (query)
-    final Uri emailLaunchUri = Uri(
+    // Construir URI mailto con destinatario, asunto y cuerpo
+    final Uri emailUri = Uri(
       scheme: 'mailto',
-      path: tuCorreo, // Esto asegura que aparezca en el campo "Para:"
-      query: encodeQueryParameters(<String, String>{
-        'subject': asunto,
-        'body': textoFinal,
-      }),
+      path: _destinatario,
+      query: _encodeQuery({'subject': asunto, 'body': texto}),
     );
 
     try {
-      // PLAN A: Intentar abrir la aplicación de correo por defecto del sistema
-      if (await canLaunchUrl(emailLaunchUri)) {
-        await launchUrl(emailLaunchUri);
+      // launchUrl con externalApplication fuerza abrir Gmail u otra app de correo
+      final launched = await launchUrl(
+        emailUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (launched) {
         setState(() => _submitted = true);
       } else {
-        // PLAN B: Si el dispositivo no tiene app de correo configurada, usa Compartir
-        await _fallbackShare(textoFinal);
+        _showError();
       }
     } catch (_) {
-      // Si ocurre un error inesperado, también ofrece Compartir como respaldo
-      await _fallbackShare(textoFinal);
+      _showError();
     }
   }
-  Future<void> _fallbackShare(String texto) async {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se detectó app de correo. Elige cómo enviarlo:'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
 
-    // Abre el menú nativo (WhatsApp, Copiar, etc.) usando la sintaxis correcta de share_plus
-    await Share.share(
-      texto,
-      subject: 'Evaluación Beta — Library Anime',
+  void _showError() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No se pudo abrir la app de correo. Instala Gmail e inténtalo de nuevo.'),
+        backgroundColor: AppColors.error,
+        duration: Duration(seconds: 4),
+      ),
     );
-    
-    setState(() => _submitted = true);
   }
 
-  // Codificador para que el texto se procese bien en la URL del correo
-  String? encodeQueryParameters(Map<String, String> params) {
+  String _encodeQuery(Map<String, String> params) {
     return params.entries
-        .map((MapEntry<String, String> e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
   }
 
@@ -174,14 +160,11 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.background,
-        body: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
-
     if (_submitted) return _buildThanks();
 
     return Scaffold(
@@ -193,7 +176,7 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
         children: [
-          // ── Banner ──────────────────────────────────────────
+          // ── Banner ────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -234,11 +217,11 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
           ),
           const SizedBox(height: 24),
 
-          // ── Promedio en vivo ─────────────────────────────────
+          // ── Promedio en vivo ───────────────────────────────────
           _LiveAverage(avg: _overallAvg),
           const SizedBox(height: 24),
 
-          // ── Secciones ────────────────────────────────────────
+          // ── Secciones ──────────────────────────────────────────
           for (final section in _sections) ...[
             _SectionHeader(title: section.name),
             const SizedBox(height: 12),
@@ -252,18 +235,18 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
         ],
       ),
 
-      // ── FAB enviar ───────────────────────────────────────────
+      // ── FAB enviar ─────────────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _sendResults,
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.send_rounded, color: Colors.white),
-        label: Text('Enviar evaluación',
+        label: Text('Enviar por email',
             style: AppTextStyles.button.copyWith(color: Colors.white)),
       ),
     );
   }
 
-  // ── Pantalla de gracias ──────────────────────────────────────
+  // ── Pantalla de gracias ────────────────────────────────────────
   Widget _buildThanks() => Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
@@ -377,7 +360,6 @@ class _QuestionCard extends StatelessWidget {
         children: [
           Text(question.titulo, style: AppTextStyles.bodyMedium),
           const SizedBox(height: 12),
-          // Estrellas interactivas
           Row(
             children: List.generate(5, (i) {
               final starVal = (i + 1).toDouble();
@@ -399,7 +381,6 @@ class _QuestionCard extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 8),
-          // Descripción del extremo seleccionado
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text(
@@ -442,7 +423,7 @@ class _SectionHeader extends StatelessWidget {
       );
 }
 
-// ── JSON por defecto (si no existe assets/data/evaluation.json) ─
+// ── JSON por defecto ────────────────────────────────────────────
 
 const String _defaultJson = '''
 {

@@ -227,24 +227,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: AppColors.primary,
                         label: 'Guardados',
                         count: favVm.savedCount,
+                        onTap: () {
+  print('isLoaded: ${favVm.isLoaded}');
+  print('savedCount: ${favVm.savedCount}');
+  print('savedAnimes: ${favVm.savedAnimes}');
+  print('savedAnimes length: ${favVm.savedAnimes.length}');
+  if (!favVm.isLoaded) return;
+  Navigator.pushNamed(context, AppRoutes.listScreen,
+      arguments: {'title': 'Guardados', 'animes': favVm.savedAnimes});
+},
                       ),
                       _ListTileItem(
                         icon: Icons.check_circle_rounded,
                         color: AppColors.success,
                         label: 'Completados',
                         count: favVm.completedCount,
+                        onTap: () {
+                          if (!favVm.isLoaded) return;
+                          Navigator.pushNamed(context, AppRoutes.listScreen,
+                              arguments: {'title': 'Completados', 'animes': favVm.completedAnimes});
+                        },
                       ),
                       _ListTileItem(
                         icon: Icons.play_arrow_rounded,
                         color: AppColors.secondary,
                         label: 'Viendo ahora',
                         count: favVm.watchingCount,
+                        onTap: () {
+                          if (!favVm.isLoaded) return;
+                          Navigator.pushNamed(context, AppRoutes.listScreen,
+                            arguments: {'title': 'Viendo ahora', 'animes': favVm.watchingAnimes});
+                        },
                       ),
                       _ListTileItem(
-                        icon: Icons.schedule_rounded,
-                        color: AppColors.warning,
-                        label: 'Pendientes',
-                        count: favVm.pendingCount,
+                      icon: Icons.schedule_rounded,
+                      color: AppColors.warning,
+                      label: 'Pendientes',
+                      count: favVm.pendingCount,
+                      onTap: () {
+                          if (!favVm.isLoaded) return;
+                          Navigator.pushNamed(context, AppRoutes.listScreen,
+                          arguments: {'title': 'Pendientes', 'animes': favVm.pendingAnimes});
+                        },
                       ),
                       const SizedBox(height: 24),
 
@@ -339,12 +363,14 @@ class _ListTileItem extends StatelessWidget {
   final Color color;
   final String label;
   final int count;
-  const _ListTileItem({required this.icon, required this.color, required this.label, required this.count});
+  final VoidCallback? onTap;
+  const _ListTileItem({required this.icon, required this.color, required this.label, required this.count, this.onTap});
   @override
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10)),
         child: ListTile(
+          onTap: onTap,
           leading: Container(
             width: 36,
             height: 36,

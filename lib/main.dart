@@ -1,10 +1,15 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'firebase_options.dart';
+import 'package:provider/provider.dart';
 
-import 'theme/app_theme.dart';
+import 'firebase_options.dart';
 import 'navigation/app_routes.dart';
+import 'theme/app_theme.dart';
+import 'viewmodels/anime_viewmodel.dart';
+import 'viewmodels/favorites_viewmodel.dart';
+import 'viewmodels/home_viewmodel.dart';
+import 'viewmodels/profile_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,12 +38,20 @@ class LibraryAnimeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Library Anime',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
-      initialRoute: AppRoutes.splash,
-      onGenerateRoute: AppRoutes.generateRoute,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AnimeViewModel()),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+      ],
+      child: MaterialApp(
+        title: 'Library Anime',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark,
+        initialRoute: AppRoutes.splash,
+        onGenerateRoute: AppRoutes.generateRoute,
+      ),
     );
   }
 }

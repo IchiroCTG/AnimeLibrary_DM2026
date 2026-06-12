@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/anime.dart';
+import 'package:provider/provider.dart';
+
 import '../models/anime_data.dart';
+import '../navigation/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/anime_viewmodel.dart';
 import '../widgets/anime_card.dart';
 import '../widgets/genre_chip.dart';
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,32 +19,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
 
-  String? _selectedGenre;
-  String? _selectedPlatform;
-  List<Anime> _results = AnimeData.catalog;
-
-  // Géneros más populares para la fila de chips
-  static const List<String> _topGenres = [
-    'Acción', 'Aventura', 'Drama', 'Comedia',
-    'Sci-Fi', 'Romance', 'Thriller', 'Deportes',
-  ];
-
-  void _applyFilters() {
-    setState(() {
-      _results = AnimeData.filterBy(
-        genre:    _selectedGenre,
-        platform: _selectedPlatform,
-        query:    _searchCtrl.text,
-      );
-    });
-  }
-
-  void _clearFilters() {
-    setState(() {
-      _selectedGenre    = null;
-      _selectedPlatform = null;
-      _searchCtrl.clear();
-      _results = AnimeData.catalog;
+  @override
+  void initState() {
+    super.initState();
+    // Carga el catálogo via ViewModel al iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AnimeViewModel>().loadAnimes();
     });
   }
 
@@ -54,190 +36,202 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasFilters =
-        _selectedGenre != null || _selectedPlatform != null || _searchCtrl.text.isNotEmpty;
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          // ── AppBar ──────────────────────────────────────────
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: AppColors.background,
-            expandedHeight: 110,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 12),
-              title: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Library', style: AppTextStyles.bodySmall),
-                  Text(
-                    'ANIME',
-                    style: AppTextStyles.headline2.copyWith(
-                      color: AppColors.primary,
-                      letterSpacing: 4,
-                      fontSize: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.tune_rounded),
-                color: AppColors.textSecondary,
-                onPressed: () => _showFilterSheet(context),
-                tooltip: 'Filtros',
-              ),
-            ],
-          ),
-
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Buscador ─────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (_) => _applyFilters(),
-                    style: AppTextStyles.bodyMedium,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por nombre, género, apodo...',
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: AppColors.textDisabled, size: 20),
-                      suffixIcon: _searchCtrl.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded,
-                                  color: AppColors.textDisabled, size: 18),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                _applyFilters();
-                              },
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Chips de género ───────────────────────────
-                SizedBox(
-                  height: 36,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _topGenres.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final genre = _topGenres[i];
-                      return GenreChip(
-                        genre: genre,
-                        isSelected: _selectedGenre == genre,
-                        onTap: () {
-                          setState(() {
-                            _selectedGenre =
-                                _selectedGenre == genre ? null : genre;
-                          });
-                          _applyFilters();
-                        },
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Chips de plataforma ───────────────────────
-                SizedBox(
-                  height: 36,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: AnimeData.allPlatforms.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final platform = AnimeData.allPlatforms[i];
-                      final isSelected = _selectedPlatform == platform;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedPlatform =
-                                isSelected ? null : platform;
-                          });
-                          _applyFilters();
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            platform,
-                            style: AppTextStyles.label.copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Header de resultados ──────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
+    // Consumer escucha cambios del ViewModel reactivamente
+    return Consumer<AnimeViewModel>(
+      builder: (context, vm, _) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: CustomScrollView(
+            slivers: [
+              // ── AppBar ──────────────────────────────────────
+              SliverAppBar(
+                pinned: true,
+                backgroundColor: AppColors.background,
+                expandedHeight: 110,
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding: const EdgeInsets.only(left: 16, bottom: 12),
+                  title: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 4, height: 20,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
+                      Text('Library', style: AppTextStyles.bodySmall),
                       Text(
-                        hasFilters
-                            ? '${_results.length} resultado${_results.length != 1 ? "s" : ""}'
-                            : 'Catálogo completo',
-                        style: AppTextStyles.headline3,
-                      ),
-                      const Spacer(),
-                      if (hasFilters)
-                        TextButton(
-                          onPressed: _clearFilters,
-                          child: Text(
-                            'Limpiar',
-                            style: AppTextStyles.label
-                                .copyWith(color: AppColors.primary),
-                          ),
+                        'ANIME',
+                        style: AppTextStyles.headline2.copyWith(
+                          color: AppColors.primary,
+                          letterSpacing: 4,
+                          fontSize: 20,
                         ),
+                      ),
                     ],
                   ),
                 ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.tune_rounded),
+                    color: AppColors.textSecondary,
+                    onPressed: () => _showFilterSheet(context, vm),
+                  ),
+                ],
+              ),
 
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Buscador ───────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: TextField(
+                        controller: _searchCtrl,
+                        onChanged: vm.setQuery,
+                        style: AppTextStyles.bodyMedium,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por nombre, género, apodo...',
+                          prefixIcon: const Icon(Icons.search_rounded,
+                              color: AppColors.textDisabled, size: 20),
+                          suffixIcon: _searchCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded,
+                                      color: AppColors.textDisabled, size: 18),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    vm.clearFilters();
+                                  },
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
 
-          // ── Grilla de animes (Master) ─────────────────────
-          _results.isEmpty
-              ? SliverFillRemaining(
+                    const SizedBox(height: 16),
+
+                    // ── Chips género ───────────────────────────
+                    SizedBox(
+                      height: 36,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: AnimeData.allGenres.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final genre = AnimeData.allGenres[i];
+                          return GenreChip(
+                            genre: genre,
+                            isSelected: vm.selectedGenre == genre,
+                            onTap: () => vm.setGenre(
+                              vm.selectedGenre == genre ? null : genre,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Chips plataforma ───────────────────────
+                    SizedBox(
+                      height: 36,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: AnimeData.allPlatforms.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final platform = AnimeData.allPlatforms[i];
+                          final isSelected = vm.selectedPlatform == platform;
+                          return GestureDetector(
+                            onTap: () => vm.setPlatform(
+                              isSelected ? null : platform,
+                            ),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                platform,
+                                style: AppTextStyles.label.copyWith(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Header resultados ──────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4, height: 20,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            vm.selectedGenre != null ||
+                                    vm.selectedPlatform != null ||
+                                    vm.query.isNotEmpty
+                                ? '${vm.animes.length} resultado${vm.animes.length != 1 ? "s" : ""}'
+                                : 'Catálogo completo',
+                            style: AppTextStyles.headline3,
+                          ),
+                          const Spacer(),
+                          if (vm.selectedGenre != null ||
+                              vm.selectedPlatform != null ||
+                              vm.query.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                vm.clearFilters();
+                              },
+                              child: Text('Limpiar',
+                                  style: AppTextStyles.label
+                                      .copyWith(color: AppColors.primary)),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+
+              // ── Loading ────────────────────────────────────
+              if (vm.isLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                )
+
+              // ── Error ──────────────────────────────────────
+              else if (vm.hasError)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Text(vm.errorMessage ?? 'Error desconocido',
+                        style: AppTextStyles.bodyMedium),
+                  ),
+                )
+
+              // ── Sin resultados ─────────────────────────────
+              else if (vm.animes.isEmpty)
+                SliverFillRemaining(
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -247,24 +241,30 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 12),
                         Text('Sin resultados', style: AppTextStyles.headline3),
                         const SizedBox(height: 4),
-                        Text('Intenta con otro filtro o nombre',
+                        Text('Intenta con otro filtro',
                             style: AppTextStyles.bodySmall),
                         const SizedBox(height: 16),
                         TextButton(
-                          onPressed: _clearFilters,
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            vm.clearFilters();
+                          },
                           child: const Text('Limpiar filtros'),
                         ),
                       ],
                     ),
                   ),
                 )
-              : SliverPadding(
+
+              // ── Grilla ────────────────────────────────────
+              else
+                SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) =>
-                          AnimeCard(anime: _results[index]),
-                      childCount: _results.length,
+                          AnimeCard(anime: vm.animes[index]),
+                      childCount: vm.animes.length,
                     ),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
@@ -275,62 +275,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  // ── Bottom sheet de filtros avanzados ─────────────────────────
-  void _showFilterSheet(BuildContext context) {
+  // ── Filter Bottom Sheet ──────────────────────────────────
+  void _showFilterSheet(BuildContext context, AnimeViewModel vm) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _FilterSheet(
-        selectedGenre:    _selectedGenre,
-        selectedPlatform: _selectedPlatform,
-        onApply: (genre, platform) {
-          setState(() {
-            _selectedGenre    = genre;
-            _selectedPlatform = platform;
-          });
-          _applyFilters();
-          Navigator.pop(context);
-        },
-      ),
+      builder: (_) => _FilterSheet(vm: vm),
     );
   }
 }
 
-// ── Filter Bottom Sheet ────────────────────────────────────────
-
-class _FilterSheet extends StatefulWidget {
-  final String? selectedGenre;
-  final String? selectedPlatform;
-  final void Function(String? genre, String? platform) onApply;
-
-  const _FilterSheet({
-    required this.selectedGenre,
-    required this.selectedPlatform,
-    required this.onApply,
-  });
-
-  @override
-  State<_FilterSheet> createState() => _FilterSheetState();
-}
-
-class _FilterSheetState extends State<_FilterSheet> {
-  late String? _genre;
-  late String? _platform;
-
-  @override
-  void initState() {
-    super.initState();
-    _genre    = widget.selectedGenre;
-    _platform = widget.selectedPlatform;
-  }
+// ── Filter Sheet ───────────────────────────────────────────
+class _FilterSheet extends StatelessWidget {
+  final AnimeViewModel vm;
+  const _FilterSheet({required this.vm});
 
   @override
   Widget build(BuildContext context) {
@@ -350,52 +318,50 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
           ),
           const SizedBox(height: 20),
-
           Text('Filtrar por Género', style: AppTextStyles.headline3),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 8, runSpacing: 8,
             children: AnimeData.allGenres.map((g) => GenreChip(
               genre: g,
-              isSelected: _genre == g,
-              onTap: () => setState(() => _genre = _genre == g ? null : g),
+              isSelected: vm.selectedGenre == g,
+              onTap: () {
+                vm.setGenre(vm.selectedGenre == g ? null : g);
+                Navigator.pop(context);
+              },
             )).toList(),
           ),
-
           const SizedBox(height: 20),
           Text('Filtrar por Plataforma', style: AppTextStyles.headline3),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 8, runSpacing: 8,
             children: AnimeData.allPlatforms.map((p) {
-              final isSelected = _platform == p;
+              final isSelected = vm.selectedPlatform == p;
               return GestureDetector(
-                onTap: () => setState(() => _platform = isSelected ? null : p),
+                onTap: () {
+                  vm.setPlatform(isSelected ? null : p);
+                  Navigator.pop(context);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(p,
                       style: AppTextStyles.label.copyWith(
-                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textSecondary,
                       )),
                 ),
               );
             }).toList(),
-          ),
-
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => widget.onApply(_genre, _platform),
-              child: const Text('Aplicar filtros'),
-            ),
           ),
         ],
       ),

@@ -1,6 +1,6 @@
 # Library Anime 📺
 
-> **Maqueta Funcional — PDS1 2026-01**  
+> **Prototipo Funcional — PDS2 2026-01**  
 > Programación para Dispositivos Móviles · Universidad de Talca  
 > Desarrollador: Pablo Gutiérrez
 
@@ -17,159 +17,237 @@ La información sobre anime se encuentra fragmentada en más de ocho plataformas
 - ¿Qué título alternativo tiene en japonés?
 - ¿Qué otros géneros me pueden gustar?
 
-El tiempo promedio de decisión de un usuario para elegir qué ver supera los 20 minutos por sesión, con una alta tasa de abandono causada por la fricción del descubrimiento.
-
 ### Solución propuesta
 
-**Library Anime** es una aplicación móvil de catálogo unificado de anime desarrollada en Flutter. Centraliza en una sola interfaz la información de miles de títulos, indica su disponibilidad por plataforma de streaming, permite filtrar por género, año, nombre y apodo (incluyendo títulos en japonés/romaji), e integra reseñas y puntuaciones de la comunidad.
-
-### Justificación de solución móvil
-
-| Factor | Justificación |
-|---|---|
-| **Ubicuidad** | El usuario busca contenido en cualquier lugar y momento, no solo frente a un computador |
-| **Push Notifications** | Imposible implementar alertas de nuevos episodios en una solución web estática |
-| **Contexto de uso** | El consumo de streaming ocurre mayoritariamente desde dispositivos móviles |
-| **UX nativa** | Gestos, transiciones y navegación nativa mejoran la experiencia frente a una PWA |
+**Library Anime** es una aplicación móvil de catálogo unificado de anime desarrollada en Flutter. Centraliza en una sola interfaz la información de 15 títulos reales, indica su disponibilidad por plataforma de streaming, permite filtrar por género, año, nombre y apodo, e integra listas personales persistentes y evaluación de usuarios.
 
 ---
 
-## 2. Funcionalidades y Requerimientos
+## 2. Arquitectura MVVM
 
-### Historias de Usuario
+### Diagrama de capas
 
-| ID | Historia | Criterios de aceptación |
-|---|---|---|
-| **HU-01** | Como **aficionado al anime**, quiero **buscar un título por nombre o apodo en japonés**, para **encontrarlo rápidamente sin recordar su nombre oficial** | La búsqueda responde en tiempo real. Acepta nombre, título alternativo y tags en japonés/romaji |
-| **HU-02** | Como **usuario**, quiero **filtrar el catálogo por género y plataforma de streaming**, para **encontrar anime que pueda ver con mi suscripción actual** | Los filtros se combinan. El resultado se actualiza inmediatamente. Se puede limpiar con un botón |
-| **HU-03** | Como **usuario**, quiero **ver la ficha completa de un anime** (sinopsis, estudio, rating, episodios, plataformas), para **decidir si vale la pena verlo sin salir de la app** | La pantalla de detalle incluye todos los campos del modelo. La portada se carga desde red |
-| **HU-04** | Como **usuario registrado**, quiero **guardar animes en listas personales** (Viendo, Completados, Pendientes), para **llevar un registro de mi historial de visualización** | El botón guardar muestra confirmación. Las listas son visibles en el perfil |
-| **HU-05** | Como **usuario nuevo**, quiero **ver una pantalla de bienvenida** al abrir la app, para **identificar visualmente el producto antes de ingresar al catálogo** | La Splash Screen se muestra por 2.5 segundos con animación y navega automáticamente al Home |
-| **HU-06** | Como **usuario**, quiero **consultar preguntas frecuentes** sobre el funcionamiento de la app, para **resolver mis dudas sin contactar soporte** | La pantalla Ayuda contiene FAQs expansibles con respuestas coherentes al dominio |
-| **HU-07** | Como **usuario**, quiero **conocer las tecnologías y el propósito de la app**, para **confiar en su origen y funcionamiento** | La pantalla Acerca de contiene descripción del producto, equipo y fuentes de datos |
+```
+┌─────────────────────────────────────────────────────────┐
+│                        VIEW                             │
+│  HomeScreen · DetailScreen · ProfileScreen              │
+│  SearchScreen · EvaluationScreen · ListScreen           │
+│                    ↕ Consumer<VM> / context.watch()     │
+├─────────────────────────────────────────────────────────┤
+│                     VIEW MODEL                          │
+│  AnimeViewModel      → filtros, catálogo, estado        │
+│  FavoritesViewModel  → listas persistentes (SP)         │
+│  ProfileViewModel    → perfil, configuración (SP)       │
+│  HomeViewModel       → índice navegación, búsqueda      │
+│                    ↕ notifyListeners()                  │
+├─────────────────────────────────────────────────────────┤
+│                       MODEL                             │
+│  Anime (dominio)     → 14 campos, getters calculados    │
+│  AnimeData           → catálogo estático + filterBy()   │
+│  SharedPreferences   → persistencia key-value           │
+│  Firestore           → base de datos en la nube (PoC)   │
+└─────────────────────────────────────────────────────────┘
+```
 
----
+### Inyección de dependencias
 
-### Matriz de Requerimientos
+Los ViewModels se inyectan en el árbol de widgets mediante `MultiProvider` en `main.dart`:
 
-#### Requerimientos Funcionales (RF)
+```dart
+MultiProvider(
+  providers: [
+    ChangeNotifierProvider(create: (_) => AnimeViewModel()),
+    ChangeNotifierProvider(create: (_) => HomeViewModel()),
+    ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+    ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+  ],
+  child: MaterialApp(...),
+)
+```
 
-| ID | Descripción | Prioridad | Pantalla |
-|---|---|---|---|
-| **RF-01** | El sistema debe mostrar el catálogo completo de anime en formato de grilla de 2 columnas | Alta | Home |
-| **RF-02** | El sistema debe permitir filtrar el catálogo por género, plataforma de streaming y texto libre | Alta | Home |
-| **RF-03** | El sistema debe navegar a la pantalla de detalle al seleccionar un anime de la grilla | Alta | Home → Detail |
-| **RF-04** | El sistema debe mostrar la ficha completa del anime: título, sinopsis, géneros, plataformas, estudio, episodios, año, rating y títulos alternativos | Alta | Detail |
-| **RF-05** | El sistema debe mostrar una Splash Screen con animación al iniciar la app | Media | Splash |
-| **RF-06** | El sistema debe proveer navegación principal mediante BottomNavigationBar con 4 secciones | Alta | MainScaffold |
-| **RF-07** | El sistema debe mostrar el perfil del usuario con estadísticas y listas personales | Media | Profile |
-| **RF-08** | El sistema debe proveer una sección de ayuda con preguntas frecuentes expansibles | Baja | Help |
-| **RF-09** | El sistema debe mostrar información del producto, tecnologías y equipo de desarrollo | Baja | About |
-| **RF-10** | El sistema debe mostrar el badge de disponibilidad por plataforma de streaming | Alta | Detail |
-
-#### Requerimientos No Funcionales (RNF)
-
-| ID | Descripción | Categoría |
-|---|---|---|
-| **RNF-01** | La aplicación debe compilar y ejecutarse en Android 8.0+ e iOS 14+ | Compatibilidad |
-| **RNF-02** | Las transiciones entre pantallas no deben superar 320ms | Rendimiento |
-| **RNF-03** | Ningún color, tipografía o estilo debe estar hardcodeado fuera de `app_colors.dart`, `app_text_styles.dart` y `app_theme.dart` | Mantenibilidad |
-| **RNF-04** | La estructura de carpetas debe seguir separación por responsabilidades: `screens/`, `widgets/`, `models/`, `theme/`, `navigation/` | Arquitectura |
-| **RNF-05** | El catálogo debe soportar filtros combinados (género + plataforma + texto) sin degradación perceptible de rendimiento | Rendimiento |
-| **RNF-06** | Todos los strings visibles al usuario deben ser coherentes con el dominio del anime | Contextualización |
-| **RNF-07** | El historial de commits debe ser atómico, descriptivo y en español o inglés técnico | Control de versiones |
-| **RNF-08** | Las imágenes de portada deben cargarse desde red con estado de carga y estado de error | Usabilidad |
-
----
-
-## 3. Arquitectura y Patrones
+La UI consume el estado con `Consumer<T>` o `context.watch<T>()`. Toda mutación de datos ocurre exclusivamente en el ViewModel mediante `notifyListeners()`, nunca en el widget.
 
 ### Estructura de carpetas
 
 ```
 lib/
-├── main.dart                    # Entry point. Configura MaterialApp y ThemeData
+├── main.dart                      # Entry point + MultiProvider
+├── firebase_options.dart          # Configuración Firebase (generado por FlutterFire CLI)
 ├── theme/
-│   ├── app_colors.dart          # Paleta centralizada. Colores por plataforma y género
-│   ├── app_text_styles.dart     # Estilos tipográficos. Familia Poppins
-│   └── app_theme.dart           # ThemeData global (dark). AppBar, Card, Chip, Button, Input
+│   ├── app_colors.dart            # Paleta centralizada
+│   ├── app_text_styles.dart       # Tipografía Poppins
+│   └── app_theme.dart             # ThemeData global dark
 ├── models/
-│   ├── anime.dart               # Clase de dominio Anime con toda la metadata
-│   └── anime_data.dart          # Dataset estático con 15 títulos reales + métodos filterBy()
+│   ├── anime.dart                 # Clase de dominio
+│   └── anime_data.dart            # Dataset + filterBy()
+├── viewmodels/
+│   ├── anime_viewmodel.dart       # Catálogo y filtros
+│   ├── favorites_viewmodel.dart   # Listas persistentes
+│   ├── profile_viewmodel.dart     # Perfil + imagen + configuración
+│   └── home_viewmodel.dart        # Navegación bottom bar
 ├── screens/
-│   ├── splash_screen.dart       # Presentación animada. Navega automáticamente al Main
-│   ├── home_screen.dart         # Master: grilla filtrable del catálogo
-│   ├── detail_screen.dart       # Detail: ficha completa del anime seleccionado
-│   ├── search_screen.dart       # Búsqueda avanzada
-│   ├── profile_screen.dart      # Perfil y listas del usuario
-│   ├── help_screen.dart         # FAQs expansibles
-│   └── about_screen.dart        # Info del producto y equipo
+│   ├── splash_screen.dart
+│   ├── home_screen.dart
+│   ├── detail_screen.dart         # Share + botones de lista
+│   ├── search_screen.dart
+│   ├── profile_screen.dart        # Image picker + listas reales
+│   ├── list_screen.dart           # Vista de lista específica
+│   ├── evaluation_screen.dart     # Beta testing con JSON
+│   ├── help_screen.dart
+│   ├── about_screen.dart
+│   └── poc/
+│       └── poc_screen.dart        # Prueba de concepto Firestore
 ├── widgets/
-│   ├── anime_card.dart          # Tarjeta reutilizable del catálogo con portada, rating y género
-│   ├── genre_chip.dart          # Chip de género con color dinámico y estado seleccionado
-│   ├── platform_badge.dart      # Badge de plataforma con color corporativo
-│   └── rating_bar.dart          # Barra de puntuación. Modo compacto y completo
+│   ├── anime_card.dart
+│   ├── genre_chip.dart
+│   ├── platform_badge.dart
+│   └── rating_bar.dart
 └── navigation/
-    ├── app_routes.dart          # Rutas centralizadas con constantes string y transiciones
-    └── main_scaffold.dart       # BottomNavigationBar con IndexedStack
+    ├── app_routes.dart            # Rutas centralizadas
+    └── main_scalffold.dart        # BottomNavigationBar
 ```
 
-### Decisiones técnicas
+---
 
-#### Patrón Lista-Detalle (Master-Detail)
-`HomeScreen` actúa como **Master**: presenta la colección de animes mediante `SliverGrid`. Al seleccionar un ítem, se navega a `DetailScreen` (**Detail**) usando `Navigator.pushNamed` y pasando el objeto `Anime` completo como argumento, evitando consultas adicionales.
+## 3. Servicios Integrados
+
+### Firebase Firestore (PoC integrada)
+
+La prueba de concepto valida la conexión asíncrona con Firestore desde la aplicación principal. Accesible desde el menú de perfil → PoC Firestore.
 
 ```dart
-// En AnimeCard — transferencia de datos entre pantallas
-Navigator.pushNamed(
-  context,
-  AppRoutes.detail,
-  arguments: anime,   // objeto Anime completo
-);
-
-// En DetailScreen — recepción del argumento
-final anime = settings.arguments as Anime;
+final snap = await FirebaseFirestore.instance
+    .collection('animes')
+    .limit(5)
+    .get();
 ```
 
-#### Sistema de rutas centralizado
-Todas las rutas están definidas como constantes `static const String` en `AppRoutes`. `MaterialApp.onGenerateRoute` delega a `AppRoutes.generateRoute`, que maneja el casting de argumentos y las transiciones animadas (fade para rutas principales, slide para pantallas de detalle).
+### shared_preferences — Persistencia local
 
-#### ThemeData sin hardcoding
-Todos los colores, tamaños de fuente y estilos son referenciados desde `AppColors` y `AppTextStyles`. Ninguna pantalla ni widget define un `Color(0x...)` o `TextStyle(fontSize: ...)` directamente. Esto garantiza coherencia visual y facilita cambios de tema globales.
+Las listas del usuario sobreviven entre sesiones usando pares clave-valor:
 
-#### Widgets reutilizables con bajo acoplamiento
-`AnimeCard`, `GenreChip`, `PlatformBadge` y `RatingBar` reciben sus datos exclusivamente por parámetros. No acceden a estado global ni a contexto de navegación (excepto `AnimeCard`, que sí navega, pero lo hace mediante `AppRoutes`). Esto permite usarlos en cualquier pantalla sin modificación.
+| Clave | Contenido |
+|---|---|
+| `list:saved` | IDs de animes guardados |
+| `list:watching` | IDs en "Viendo ahora" |
+| `list:completed` | IDs completados |
+| `list:pending` | IDs pendientes |
+| `profile:username` | Nombre de usuario |
+| `profile:image_path` | Ruta local de foto de perfil |
+| `profile:notifications` | Preferencia de notificaciones |
 
-### Jerarquía de navegación
+### share_plus — Interoperabilidad
+
+Desde `DetailScreen` el usuario puede compartir cualquier anime al ecosistema nativo del dispositivo (WhatsApp, correo, redes sociales):
+
+```dart
+SharePlus.instance.share(
+  ShareParams(
+    text: '🎌 ${anime.title}\n⭐ ${anime.rating}/10\n📺 ${platforms}',
+  ),
+);
+```
+
+---
+
+## 4. Jerarquía de Navegación
 
 ```
 SplashScreen
     └── MainScaffold (BottomNavigationBar)
             ├── [0] HomeScreen
-            │       └── DetailScreen  ← push con Anime como argumento
+            │       └── DetailScreen  ← share_plus + listas
             ├── [1] SearchScreen
             ├── [2] ProfileScreen
-            │       └── AboutScreen   ← push desde Configuración
+            │       ├── ListScreen    ← Guardados / Viendo / Completados / Pendientes
+            │       ├── EvaluationScreen ← Beta Testing JSON
+            │       └── AboutScreen
             └── [3] HelpScreen
 ```
 
 ---
 
-## 4. Material de apoyo
+## 5. Reporte de QA — Beta Testing
 
-| Recurso | Enlace |
-|---|---|
-| 🎥 Video de exposición | `https://youtu.be/HEcZDg0Odvw` |
-| 📊 Presentación de slides | `https://docs.google.com/presentation/d/1jzPum2vKqLOSTuNNQ6K7FpJ8ouvKx_wK/edit?usp=sharing&ouid=116373422622507881907&rtpof=true&sd=true` |
-| 📦 Repositorio | `https://github.com/IchiroCTG/AnimeLibrary_DM2026.git` |
+### Instrumento
+
+9 preguntas estructuradas en JSON, organizadas en 3 secciones, calificadas con estrellas (0–5). El instrumento se carga desde `assets/data/evaluation.json` y se envía por email al evaluador mediante `url_launcher` con `mailto:`.
+
+### Usuarios evaluados
+
+| # | Tipo | Promedio |
+|---|------|----------|
+| 1 | Compañero | 4.3 / 5.0 |
+| 2 | Desconocedor | 4.9 / 5.0 |
+| 3 | Compañero | 4.7 / 5.0 |
+| 4 | Compañero | 4.0 / 5.0 |
+| 5 | Compañero | 5.0 / 5.0 |
+| 6 | Compañero | 3.7 / 5.0 |
+| 7 | Compañero | 5.0 / 5.0 |
+| 8 | Compañero | 4.6 / 5.0 |
+| 9 | Compañero | 5.0 / 5.0 |
+| 10 | Desconocedor | 4.9 / 5.0 |
+| 11 | Conocedor industria | 4.2 / 5.0 |
+| 12 | Conocedor industria | 4.6 / 5.0 |
+
+### Resultados por sección
+
+| Sección | Promedio |
+|---------|----------|
+| Usabilidad | **4.78 / 5.0** |
+| Contenido | **4.53 / 5.0** |
+| Recomendación | **4.39 / 5.0** |
+| **General** | **4.56 / 5.0** |
+
+### Por tipo de usuario
+
+| Tipo | n | Promedio |
+|------|---|----------|
+| Compañeros ramo | 8 | 4.53 / 5.0 |
+| Conocedores industria | 2 | 4.39 / 5.0 |
+| Externos (desconocedores) | 2 | 4.89 / 5.0 |
+
+### Qué funcionó
+
+- **Usabilidad** fue la sección mejor evaluada (4.78). La navegación por BottomNavigationBar resultó intuitiva para todos los perfiles de usuario.
+- **Usuarios externos** dieron las notas más altas (4.89), lo que indica que la app es accesible sin conocimiento técnico previo del dominio anime.
+- Los filtros combinados por género y plataforma fueron valorados positivamente por todos los grupos.
+- El diseño visual (tema oscuro, paleta consistente) fue destacado en múltiples evaluaciones.
+
+### Qué falló / áreas de mejora
+
+- **Contenido** fue la sección con mayor varianza. El usuario 6 (compañero) calificó utilidad del contenido con 2/5, señalando que el catálogo de 15 títulos es limitado para un usuario avanzado.
+- **Recomendación** fue la sección más baja (4.39). Dos usuarios (conocedores) bajaron la nota de recomendación a 3/5, probablemente por la falta de datos en tiempo real desde APIs externas.
+- La pantalla de perfil muestra contadores fijos en lugar de estadísticas calculadas dinámicamente desde el historial real del usuario.
+
+### Trabajos futuros — Deuda técnica
+
+| Prioridad | Item |
+|-----------|------|
+| Alta | Ampliar catálogo conectando API de MyAnimeList o AniList |
+| Alta | Autenticación real con Firebase Auth (login/registro) |
+| Media | Notificaciones push para nuevos episodios |
+| Media | Modo offline con caché local de Firestore |
+| Baja | Estadísticas de uso (tiempo viendo, géneros favoritos) |
+| Baja | Tema claro / oscuro seleccionable por el usuario |
 
 ---
 
-## 5. Guía de instalación
+## 6. Material de apoyo
+
+| Recurso | Enlace |
+|---|---|
+| 🎥 Video de exposición PDS2 |https://youtu.be/6ASpjCjZBV4|
+| 📊 Presentación PDS2 |https://docs.google.com/presentation/d/12c6spLz72tjrNdc0BNQN-0Nh50_u-rb0v55z5il2FKc/edit?usp=sharing|
+| 📦 Repositorio | https://github.com/IchiroCTG/AnimeLibrary_DM2026.git |
+
+---
+
+## 7. Guía de instalación
 
 ```bash
 # 1. Clonar el repositorio
-git clone <https://github.com/IchiroCTG/AnimeLibrary_DM2026.git>
+git clone https://github.com/IchiroCTG/AnimeLibrary_DM2026.git
 cd library_anime
 
 # 2. Instalar dependencias
@@ -182,12 +260,25 @@ flutter doctor
 flutter run
 ```
 
-**Versión mínima de Flutter:** 3.3.0  
-**Dart SDK:** >=3.3.0 <4.0.0  
-**Plataformas:** Android 8.0+ · iOS 14+
+### Dependencias principales
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.x.x
+  cloud_firestore: ^5.x.x
+  provider: ^6.x.x
+  shared_preferences: ^2.x.x
+  share_plus: ^10.x.x
+  url_launcher: ^6.x.x
+  image_picker: ^1.x.x
+  path_provider: ^2.x.x
+  path: ^1.x.x
+```
+
+**Flutter mínimo:** 3.3.0 · **Dart SDK:** >=3.3.0 <4.0.0 · **Android:** 8.0+ · **iOS:** 14+
 
 ---
-
-
 
 *© 2026 Library Anime · Universidad de Talca · Programación para Dispositivos Móviles*

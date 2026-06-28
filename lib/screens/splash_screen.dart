@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+
 import '../navigation/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -18,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     _timer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {  // ← verifica que el widget aún existe
+      if (mounted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.main);
       }
     });
@@ -26,12 +28,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();  // ← cancela el timer si el widget se destruye antes
+    _timer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
@@ -44,9 +48,9 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 96,
             ),
             const SizedBox(height: 24),
-            Text('Library', style: AppTextStyles.headline1),
+            Text(l.homeSubtitle, style: AppTextStyles.headline1),
             Text(
-              'ANIME',
+              l.homeTitle,
               style: AppTextStyles.headline1.copyWith(
                 color: AppColors.primary,
                 letterSpacing: 6,
@@ -55,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu catálogo unificado de anime',
+              l.splashTagline,
               style: AppTextStyles.bodySmall,
             ),
           ],

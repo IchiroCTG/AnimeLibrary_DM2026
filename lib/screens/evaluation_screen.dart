@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
@@ -86,7 +87,6 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
     return labels[key] ?? key;
   }
 
-  // ── Construir texto del resultado ──────────────────────────
   String _buildResultText() {
     final buffer = StringBuffer();
     buffer.writeln('=== Evaluación Beta — Library Anime ===\n');
@@ -95,22 +95,23 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
       for (final q in section.questions) {
         final stars = '★' * q.valor.round() + '☆' * (5 - q.valor.round());
         buffer.writeln(q.titulo);
-        buffer.writeln('Calificación: $stars (${q.valor.toStringAsFixed(0)}/5)\n');
+        buffer.writeln(
+            'Calificación: $stars (${q.valor.toStringAsFixed(0)}/5)\n');
       }
     }
-    final total = _sections.expand((s) => s.questions).fold(0.0, (sum, q) => sum + q.valor);
+    final total = _sections
+        .expand((s) => s.questions)
+        .fold(0.0, (sum, q) => sum + q.valor);
     final count = _sections.expand((s) => s.questions).length;
     final avg = count > 0 ? (total / count).toStringAsFixed(1) : '0.0';
     buffer.writeln('Promedio general: $avg / 5.0');
     return buffer.toString();
   }
 
-  // ── Enviar por email ───────────────────────────────────────
-  Future<void> _sendResults() async {
+  Future<void> _sendResults(AppLocalizations l) async {
     final texto = _buildResultText();
     const asunto = 'Evaluación Beta — Library Anime';
 
-    // Construir URI mailto con destinatario, asunto y cuerpo
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: _destinatario,
@@ -118,36 +119,33 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
     );
 
     try {
-      // launchUrl con externalApplication fuerza abrir Gmail u otra app de correo
-      final launched = await launchUrl(
-        emailUri,
-        mode: LaunchMode.externalApplication,
-      );
-
+      final launched =
+          await launchUrl(emailUri, mode: LaunchMode.externalApplication);
       if (launched) {
         setState(() => _submitted = true);
       } else {
-        _showError();
+        _showError(l);
       }
     } catch (_) {
-      _showError();
+      _showError(l);
     }
   }
 
-  void _showError() {
+  void _showError(AppLocalizations l) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No se pudo abrir la app de correo. Instala Gmail e inténtalo de nuevo.'),
+      SnackBar(
+        content: Text(l.evalEmailError),
         backgroundColor: AppColors.error,
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
 
   String _encodeQuery(Map<String, String> params) {
     return params.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map((e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
   }
 
@@ -159,24 +157,27 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     if (_loading) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
-    if (_submitted) return _buildThanks();
+    if (_submitted) return _buildThanks(l);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
-        title: Text('Evaluación Beta', style: AppTextStyles.headline3),
+        title: Text(l.evalTitle, style: AppTextStyles.headline3),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
         children: [
-          // ── Banner ────────────────────────────────────────────
+          // ── Banner ──────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -203,12 +204,9 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Beta Testing', style: AppTextStyles.headline3),
+                      Text(l.evalBanner, style: AppTextStyles.headline3),
                       const SizedBox(height: 4),
-                      Text(
-                        'Ayúdanos a mejorar Library Anime con tu opinión.',
-                        style: AppTextStyles.bodySmall,
-                      ),
+                      Text(l.evalBannerDesc, style: AppTextStyles.bodySmall),
                     ],
                   ),
                 ),
@@ -217,37 +215,33 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
           ),
           const SizedBox(height: 24),
 
-          // ── Promedio en vivo ───────────────────────────────────
-          _LiveAverage(avg: _overallAvg),
+          _LiveAverage(avg: _overallAvg, label: l.evalAverage),
           const SizedBox(height: 24),
 
-          // ── Secciones ──────────────────────────────────────────
           for (final section in _sections) ...[
             _SectionHeader(title: section.name),
             const SizedBox(height: 12),
             for (final q in section.questions)
               _QuestionCard(
                 question: q,
+                starHint: l.evalStarHint,
                 onChanged: (val) => setState(() => q.valor = val),
               ),
             const SizedBox(height: 8),
           ],
         ],
       ),
-
-      // ── FAB enviar ─────────────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _sendResults,
+        onPressed: () => _sendResults(l),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.send_rounded, color: Colors.white),
-        label: Text('Enviar por email',
+        label: Text(l.evalSend,
             style: AppTextStyles.button.copyWith(color: Colors.white)),
       ),
     );
   }
 
-  // ── Pantalla de gracias ────────────────────────────────────────
-  Widget _buildThanks() => Scaffold(
+  Widget _buildThanks(AppLocalizations l) => Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
           child: Padding(
@@ -266,10 +260,10 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
                       color: AppColors.success, size: 48),
                 ),
                 const SizedBox(height: 24),
-                Text('¡Gracias!', style: AppTextStyles.headline1),
+                Text(l.evalThanks, style: AppTextStyles.headline1),
                 const SizedBox(height: 8),
                 Text(
-                  'Tu evaluación fue enviada correctamente.\nTu feedback nos ayuda a mejorar.',
+                  l.evalThanksDesc,
                   style: AppTextStyles.bodyMedium
                       .copyWith(color: AppColors.textSecondary),
                   textAlign: TextAlign.center,
@@ -279,7 +273,7 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Volver'),
+                    child: Text(l.evalBack),
                   ),
                 ),
               ],
@@ -293,7 +287,8 @@ class _EvaluationScreenState extends State<EvaluationScreen> {
 
 class _LiveAverage extends StatelessWidget {
   final double avg;
-  const _LiveAverage({required this.avg});
+  final String label;
+  const _LiveAverage({required this.avg, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +314,7 @@ class _LiveAverage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Promedio actual', style: AppTextStyles.label),
+                Text(label, style: AppTextStyles.label),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
@@ -339,12 +334,16 @@ class _LiveAverage extends StatelessWidget {
   }
 }
 
-// ── Card de pregunta con estrellas ─────────────────────────────
+// ── Card de pregunta ───────────────────────────────────────────
 
 class _QuestionCard extends StatelessWidget {
   final _Question question;
+  final String starHint;
   final ValueChanged<double> onChanged;
-  const _QuestionCard({required this.question, required this.onChanged});
+  const _QuestionCard(
+      {required this.question,
+      required this.starHint,
+      required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -385,7 +384,7 @@ class _QuestionCard extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             child: Text(
               question.valor == 0
-                  ? 'Toca las estrellas para calificar'
+                  ? starHint
                   : question.valor <= 2
                       ? question.min
                       : question.max,
@@ -428,64 +427,19 @@ class _SectionHeader extends StatelessWidget {
 const String _defaultJson = '''
 {
   "usabilidad": [
-    {
-      "titulo": "Pregunta 1: ¿Qué tan fácil fue navegar a través de la aplicación?",
-      "valor": 0,
-      "min": "0 estrellas: Fue muy difícil encontrar las funcionalidades, la navegación fue confusa.",
-      "max": "5 estrellas: Fue extremadamente fácil, la navegación es intuitiva y sin complicaciones."
-    },
-    {
-      "titulo": "Pregunta 2: ¿Pudiste completar tus tareas en la aplicación sin problemas?",
-      "valor": 0,
-      "min": "0 estrellas: No pude completar las tareas, fue frustrante.",
-      "max": "5 estrellas: Pude completar todas las tareas de forma rápida y eficiente."
-    },
-    {
-      "titulo": "Pregunta 3: ¿Cómo calificas la interfaz gráfica en términos de diseño y claridad?",
-      "valor": 0,
-      "min": "0 estrellas: La interfaz es poco clara y difícil de entender.",
-      "max": "5 estrellas: La interfaz es clara, atractiva y facilita el uso."
-    }
+    {"titulo": "Pregunta 1: ¿Qué tan fácil fue navegar a través de la aplicación?", "valor": 0, "min": "0 estrellas: Fue muy difícil.", "max": "5 estrellas: Fue extremadamente fácil."},
+    {"titulo": "Pregunta 2: ¿Pudiste completar tus tareas sin problemas?", "valor": 0, "min": "0 estrellas: No pude completar las tareas.", "max": "5 estrellas: Pude completarlas de forma rápida."},
+    {"titulo": "Pregunta 3: ¿Cómo calificas la interfaz gráfica?", "valor": 0, "min": "0 estrellas: La interfaz es poco clara.", "max": "5 estrellas: La interfaz es clara y atractiva."}
   ],
   "contenido": [
-    {
-      "titulo": "Pregunta 4: ¿El contenido de la aplicación fue útil para ti?",
-      "valor": 0,
-      "min": "0 estrellas: El contenido no fue relevante ni útil.",
-      "max": "5 estrellas: El contenido fue muy útil y relevante para mis necesidades."
-    },
-    {
-      "titulo": "Pregunta 5: ¿Qué tan bien el contenido se adapta a tus expectativas?",
-      "valor": 0,
-      "min": "0 estrellas: El contenido no cumplió con mis expectativas.",
-      "max": "5 estrellas: El contenido superó completamente mis expectativas."
-    },
-    {
-      "titulo": "Pregunta 6: ¿El contenido está presentado de manera clara y comprensible?",
-      "valor": 0,
-      "min": "0 estrellas: El contenido está mal estructurado o es confuso.",
-      "max": "5 estrellas: El contenido está muy bien presentado y es fácil de comprender."
-    }
+    {"titulo": "Pregunta 4: ¿El contenido fue útil para ti?", "valor": 0, "min": "0 estrellas: No fue relevante.", "max": "5 estrellas: Fue muy útil."},
+    {"titulo": "Pregunta 5: ¿El contenido se adapta a tus expectativas?", "valor": 0, "min": "0 estrellas: No cumplió mis expectativas.", "max": "5 estrellas: Las superó completamente."},
+    {"titulo": "Pregunta 6: ¿El contenido está presentado de manera clara?", "valor": 0, "min": "0 estrellas: Está mal estructurado.", "max": "5 estrellas: Muy bien presentado."}
   ],
   "compartir": [
-    {
-      "titulo": "Pregunta 7: ¿Qué tan probable es que recomiendes esta aplicación?",
-      "valor": 0,
-      "min": "0 estrellas: No la recomendaría en absoluto.",
-      "max": "5 estrellas: Definitivamente la recomendaría."
-    },
-    {
-      "titulo": "Pregunta 8: ¿Cómo te sentirías al compartir esta app con alguien más?",
-      "valor": 0,
-      "min": "0 estrellas: No me sentiría cómodo compartiéndola.",
-      "max": "5 estrellas: Me sentiría muy cómodo compartiéndola."
-    },
-    {
-      "titulo": "Pregunta 9: ¿Crees que esta aplicación podría ser útil para personas cercanas?",
-      "valor": 0,
-      "min": "0 estrellas: No creo que sea útil para otras personas.",
-      "max": "5 estrellas: Estoy seguro de que sería muy útil para personas cercanas."
-    }
+    {"titulo": "Pregunta 7: ¿Qué tan probable es que recomiendes la app?", "valor": 0, "min": "0 estrellas: No la recomendaría.", "max": "5 estrellas: Definitivamente la recomendaría."},
+    {"titulo": "Pregunta 8: ¿Cómo te sentirías al compartirla?", "valor": 0, "min": "0 estrellas: No me sentiría cómodo.", "max": "5 estrellas: Me sentiría muy cómodo."},
+    {"titulo": "Pregunta 9: ¿Crees que sería útil para personas cercanas?", "valor": 0, "min": "0 estrellas: No creo que sea útil.", "max": "5 estrellas: Estoy seguro que sería muy útil."}
   ]
 }
 ''';

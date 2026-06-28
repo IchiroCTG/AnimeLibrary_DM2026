@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -14,21 +15,24 @@ class DetailScreen extends StatelessWidget {
   final Anime anime;
   const DetailScreen({super.key, required this.anime});
 
-  // ── Compartir vía share_plus ───────────────────────────────
- void _share() {
-  final platforms = anime.platforms.join(', ');
-
-  Share.share(
-    ' ${anime.title} (${anime.originalTitle})\n'
-    ' ${anime.rating}/10 · ${anime.episodes} eps · ${anime.releaseYear}\n'
-    ' Disponible en: $platforms\n\n'
-    '${anime.synopsis.length > 120 ? anime.synopsis.substring(0, 120) + '…' : anime.synopsis}\n\n'
-    'Encontrado en Library Anime 📱',
-  );
-}
+  void _share(AppLocalizations l) {
+    final platforms = anime.platforms.join(', ');
+    Share.share(
+      l.detailShareText(
+        anime.episodes,
+        anime.originalTitle,
+        platforms,
+        anime.rating,
+        anime.title,
+        anime.releaseYear,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Consumer<FavoritesViewModel>(
       builder: (context, favVm, _) {
         final isSaved = favVm.isSaved(anime.id);
@@ -45,7 +49,8 @@ class DetailScreen extends StatelessWidget {
                 leading: Padding(
                   padding: const EdgeInsets.all(8),
                   child: CircleAvatar(
-                    backgroundColor: AppColors.background.withValues(alpha: 0.7),
+                    backgroundColor:
+                        AppColors.background.withValues(alpha: 0.7),
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new_rounded,
                           color: AppColors.textPrimary, size: 18),
@@ -54,24 +59,25 @@ class DetailScreen extends StatelessWidget {
                   ),
                 ),
                 actions: [
-                  // Botón compartir
                   Padding(
                     padding: const EdgeInsets.all(8),
                     child: CircleAvatar(
-                      backgroundColor: AppColors.background.withValues(alpha: 0.7),
+                      backgroundColor:
+                          AppColors.background.withValues(alpha: 0.7),
                       child: IconButton(
                         icon: const Icon(Icons.share_rounded,
                             color: AppColors.textPrimary, size: 20),
-                        onPressed: _share,
-                        tooltip: 'Compartir',
+                        onPressed: () => _share(l),
+                        tooltip: l.detailShare,
                       ),
                     ),
                   ),
-                  // Botón guardar (reactivo al ViewModel)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                    padding:
+                        const EdgeInsets.only(right: 8, top: 8, bottom: 8),
                     child: CircleAvatar(
-                      backgroundColor: AppColors.background.withValues(alpha: 0.7),
+                      backgroundColor:
+                          AppColors.background.withValues(alpha: 0.7),
                       child: IconButton(
                         icon: Icon(
                           isSaved
@@ -89,8 +95,8 @@ class DetailScreen extends StatelessWidget {
                               SnackBar(
                                 content: Text(
                                   favVm.isSaved(anime.id)
-                                      ? '${anime.title} guardado en tu lista'
-                                      : '${anime.title} eliminado de tu lista',
+                                      ? l.detailSavedMsg(anime.title)
+                                      : l.detailRemovedMsg(anime.title),
                                   style: AppTextStyles.bodySmall
                                       .copyWith(color: Colors.white),
                                 ),
@@ -128,7 +134,10 @@ class DetailScreen extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             stops: [0.3, 1.0],
-                            colors: [Colors.transparent, AppColors.background],
+                            colors: [
+                              Colors.transparent,
+                              AppColors.background
+                            ],
                           ),
                         ),
                       ),
@@ -189,11 +198,11 @@ class DetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Listas rápidas ────────────────────────
-                      _QuickLists(anime: anime, favVm: favVm),
+                      _QuickLists(anime: anime, favVm: favVm, l: l),
                       const SizedBox(height: 24),
 
                       // ── Géneros ───────────────────────────────
-                      const _SectionHeader(title: 'Géneros'),
+                      _SectionHeader(title: l.detailGenres),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -205,7 +214,7 @@ class DetailScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // ── Disponible en ─────────────────────────
-                      const _SectionHeader(title: 'Disponible en'),
+                      _SectionHeader(title: l.detailAvailableOn),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 10,
@@ -217,7 +226,7 @@ class DetailScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // ── Sinopsis ──────────────────────────────
-                      const _SectionHeader(title: 'Sinopsis'),
+                      _SectionHeader(title: l.detailSynopsis),
                       const SizedBox(height: 10),
                       Text(
                         anime.synopsis,
@@ -229,7 +238,7 @@ class DetailScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // ── Ficha técnica ─────────────────────────
-                      const _SectionHeader(title: 'Ficha técnica'),
+                      _SectionHeader(title: l.detailTechnical),
                       const SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
@@ -238,21 +247,23 @@ class DetailScreen extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _InfoRow(label: 'Estudio', value: anime.studio),
+                            _InfoRow(
+                                label: l.detailStudio, value: anime.studio),
                             _Divider(),
                             _InfoRow(
-                                label: 'Año de estreno',
+                                label: l.detailYear,
                                 value: '${anime.releaseYear}'),
                             _Divider(),
                             _InfoRow(
-                                label: 'Episodios',
+                                label: l.detailEpisodes,
                                 value: '${anime.episodes}'),
                             _Divider(),
-                            _InfoRow(label: 'Estado', value: anime.status),
+                            _InfoRow(
+                                label: l.detailStatus, value: anime.status),
                             if (anime.tags.isNotEmpty) ...[
                               _Divider(),
                               _InfoRow(
-                                label: 'Títulos alternativos',
+                                label: l.detailAltTitles,
                                 value: anime.tags.join('  ·  '),
                               ),
                             ],
@@ -262,7 +273,7 @@ class DetailScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // ── Puntuación ────────────────────────────
-                      const _SectionHeader(title: 'Puntuación de la comunidad'),
+                      _SectionHeader(title: l.detailScore),
                       const SizedBox(height: 10),
                       Container(
                         padding: const EdgeInsets.all(20),
@@ -290,20 +301,18 @@ class DetailScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Puntuación de MyAnimeList',
+                                  Text(l.detailScoreSource,
                                       style: AppTextStyles.bodyMedium),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'Basado en valoraciones de la comunidad global.',
-                                    style: AppTextStyles.bodySmall,
-                                  ),
+                                  Text(l.detailScoreDesc,
+                                      style: AppTextStyles.bodySmall),
                                   const SizedBox(height: 12),
                                   _RatingProgress(
-                                      label: 'Historia', value: 0.92),
+                                      label: l.detailStory, value: 0.92),
                                   _RatingProgress(
-                                      label: 'Animación', value: 0.88),
+                                      label: l.detailAnimation, value: 0.88),
                                   _RatingProgress(
-                                      label: 'Personajes', value: 0.90),
+                                      label: l.detailCharacters, value: 0.90),
                                 ],
                               ),
                             ),
@@ -316,9 +325,9 @@ class DetailScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _share,
+                          onPressed: () => _share(l),
                           icon: const Icon(Icons.share_rounded),
-                          label: const Text('Compartir este anime'),
+                          label: Text(l.detailShare),
                         ),
                       ),
                     ],
@@ -333,40 +342,42 @@ class DetailScreen extends StatelessWidget {
   }
 }
 
-// ── Listas rápidas (Guardar / Viendo / Completado / Pendiente) ─
+// ── Listas rápidas ─────────────────────────────────────────────
 
 class _QuickLists extends StatelessWidget {
   final Anime anime;
   final FavoritesViewModel favVm;
-  const _QuickLists({required this.anime, required this.favVm});
+  final AppLocalizations l;
+  const _QuickLists(
+      {required this.anime, required this.favVm, required this.l});
 
   @override
   Widget build(BuildContext context) {
     final buttons = [
       _ListBtn(
         icon: Icons.bookmark_rounded,
-        label: 'Guardado',
+        label: l.detailSaved,
         active: favVm.isSaved(anime.id),
         color: AppColors.primary,
         onTap: () => favVm.toggleSaved(anime.id),
       ),
       _ListBtn(
         icon: Icons.play_arrow_rounded,
-        label: 'Viendo',
+        label: l.detailWatching,
         active: favVm.isWatching(anime.id),
         color: AppColors.secondary,
         onTap: () => favVm.toggleWatching(anime.id),
       ),
       _ListBtn(
         icon: Icons.check_circle_rounded,
-        label: 'Visto',
+        label: l.detailCompleted,
         active: favVm.isCompleted(anime.id),
         color: AppColors.success,
         onTap: () => favVm.toggleCompleted(anime.id),
       ),
       _ListBtn(
         icon: Icons.schedule_rounded,
-        label: 'Pendiente',
+        label: l.detailPending,
         active: favVm.isPending(anime.id),
         color: AppColors.warning,
         onTap: () => favVm.togglePending(anime.id),
@@ -409,7 +420,8 @@ class _ListBtn extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color:
+              active ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active ? color : AppColors.surfaceVariant,
@@ -417,7 +429,8 @@ class _ListBtn extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, color: active ? color : AppColors.textDisabled, size: 22),
+            Icon(icon,
+                color: active ? color : AppColors.textDisabled, size: 22),
             const SizedBox(height: 4),
             Text(
               label,

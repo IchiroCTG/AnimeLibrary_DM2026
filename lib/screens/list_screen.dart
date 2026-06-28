@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+
 import '../models/anime.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -16,6 +18,8 @@ class ListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -29,11 +33,11 @@ class ListScreen extends StatelessWidget {
         title: Text(title, style: AppTextStyles.headline3),
         centerTitle: true,
       ),
-      body: animes.isEmpty ? _buildEmptyState() : _buildAnimeGrid(animes),
+      body: animes.isEmpty ? _buildEmptyState(l) : _buildAnimeGrid(animes),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -47,14 +51,14 @@ class ListScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No hay animes en esta lista',
+              l.listEmpty,
               style: AppTextStyles.headline3
                   .copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Explora el catálogo principal para añadir tus series favoritas.',
+              l.listEmptyHint,
               style: AppTextStyles.bodySmall,
               textAlign: TextAlign.center,
             ),

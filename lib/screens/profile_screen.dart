@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../navigation/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/favorites_viewmodel.dart';
+import '../viewmodels/locale_viewmodel.dart';
 import '../viewmodels/profile_viewmodel.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -25,14 +27,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // Cuadro de diálogo interactivo para actualizar el nombre de usuario de forma persistente
-  void _showEditNameDialog(BuildContext context, ProfileViewModel profileVm) {
+  void _showEditNameDialog(BuildContext context, ProfileViewModel profileVm, AppLocalizations l) {
     final controller = TextEditingController(text: profileVm.username);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Editar nombre', style: AppTextStyles.headline3),
+        title: Text(l.profileEditName, style: AppTextStyles.headline3),
         content: TextField(
           controller: controller,
           style: AppTextStyles.searchText,
@@ -45,7 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(l.profileEditCancel,
+                style: const TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
@@ -54,7 +56,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
               Navigator.pop(context);
             },
-            child: const Text('Guardar', style: TextStyle(color: AppColors.primary)),
+            child: Text(l.profileEditSave,
+                style: const TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -63,9 +66,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Consumer2<ProfileViewModel, FavoritesViewModel>(
       builder: (context, profileVm, favVm, _) {
-        // Manejo de Estado: Cargando datos
         if (profileVm.isLoading) {
           return const Scaffold(
             backgroundColor: AppColors.background,
@@ -75,7 +79,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        // Manejo de Estado: Error crítico en persistencia
         if (profileVm.state == ProfileState.error) {
           return const Scaffold(
             backgroundColor: AppColors.background,
@@ -89,14 +92,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        // Determinar si el usuario tiene una foto de perfil personalizada en disco
-        final hasCustomImage = profileVm.profileImagePath != null && profileVm.profileImagePath!.isNotEmpty;
+        final hasCustomImage = profileVm.profileImagePath != null &&
+            profileVm.profileImagePath!.isNotEmpty;
 
         return Scaffold(
           backgroundColor: AppColors.background,
           body: CustomScrollView(
             slivers: [
-              // ── Header expandible con Foto y Nombre ──────────
+              // ── Header ────────────────────────────────────────
               SliverAppBar(
                 expandedHeight: 220,
                 pinned: true,
@@ -120,7 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            // Contenedor interactivo de la foto de perfil (ImagePicker)
                             GestureDetector(
                               onTap: () => profileVm.changeProfileImage(),
                               child: Stack(
@@ -131,16 +133,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       color: AppColors.primary,
-                                      border: Border.all(color: AppColors.background, width: 3),
+                                      border: Border.all(
+                                          color: AppColors.background, width: 3),
                                       image: hasCustomImage
                                           ? DecorationImage(
-                                              image: FileImage(File(profileVm.profileImagePath!)),
+                                              image: FileImage(File(
+                                                  profileVm.profileImagePath!)),
                                               fit: BoxFit.cover,
                                             )
                                           : null,
                                     ),
                                     child: !hasCustomImage
-                                        ? const Icon(Icons.person_rounded, color: AppColors.textPrimary, size: 38)
+                                        ? const Icon(Icons.person_rounded,
+                                            color: AppColors.textPrimary,
+                                            size: 38)
                                         : null,
                                   ),
                                   Positioned(
@@ -152,7 +158,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         color: AppColors.primary,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 12),
+                                      child: const Icon(
+                                          Icons.camera_alt_rounded,
+                                          color: Colors.white,
+                                          size: 12),
                                     ),
                                   ),
                                 ],
@@ -165,15 +174,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Text(profileVm.username, style: AppTextStyles.headline3),
+                                    Text(profileVm.username,
+                                        style: AppTextStyles.headline3),
                                     const SizedBox(width: 6),
                                     GestureDetector(
-                                      onTap: () => _showEditNameDialog(context, profileVm),
-                                      child: const Icon(Icons.edit_rounded, color: AppColors.textSecondary, size: 16),
+                                      onTap: () => _showEditNameDialog(
+                                          context, profileVm, l),
+                                      child: const Icon(Icons.edit_rounded,
+                                          color: AppColors.textSecondary,
+                                          size: 16),
                                     ),
                                   ],
                                 ),
-                                Text(profileVm.email, style: AppTextStyles.bodySmall),
+                                Text(profileVm.email,
+                                    style: AppTextStyles.bodySmall),
                               ],
                             ),
                           ],
@@ -190,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Stats (Leídos en tiempo real del FavoritesViewModel) ─
+                      // ── Stats ──────────────────────────────────────
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
@@ -201,133 +215,163 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             _StatItem(
-                              value: '${favVm.savedCount + favVm.watchingCount + favVm.completedCount + favVm.pendingCount}',
-                              label: 'En listas',
+                              value:
+                                  '${favVm.savedCount + favVm.watchingCount + favVm.completedCount + favVm.pendingCount}',
+                              label: l.profileInLists,
                             ),
-                            Container(width: 1, height: 36, color: AppColors.surfaceVariant),
+                            Container(
+                                width: 1,
+                                height: 36,
+                                color: AppColors.surfaceVariant),
                             _StatItem(
                               value: '${favVm.completedCount}',
-                              label: 'Completados',
+                              label: l.profileCompleted,
                             ),
-                            Container(width: 1, height: 36, color: AppColors.surfaceVariant),
+                            Container(
+                                width: 1,
+                                height: 36,
+                                color: AppColors.surfaceVariant),
                             _StatItem(
                               value: '${favVm.watchingCount}',
-                              label: 'Viendo',
+                              label: l.profileWatching,
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Mis listas ───────────────────────────────────
-                      Text('Mis Listas', style: AppTextStyles.headline3),
+                      // ── Mis listas ─────────────────────────────────
+                      Text(l.profileMyLists, style: AppTextStyles.headline3),
                       const SizedBox(height: 12),
                       _ListTileItem(
                         icon: Icons.bookmark_rounded,
                         color: AppColors.primary,
-                        label: 'Guardados',
+                        label: l.profileSaved,
                         count: favVm.savedCount,
                         onTap: () {
-  print('isLoaded: ${favVm.isLoaded}');
-  print('savedCount: ${favVm.savedCount}');
-  print('savedAnimes: ${favVm.savedAnimes}');
-  print('savedAnimes length: ${favVm.savedAnimes.length}');
-  if (!favVm.isLoaded) return;
-  Navigator.pushNamed(context, AppRoutes.listScreen,
-      arguments: {'title': 'Guardados', 'animes': favVm.savedAnimes});
-},
+                          if (!favVm.isLoaded) return;
+                          Navigator.pushNamed(context, AppRoutes.listScreen,
+                              arguments: {
+                                'title': l.profileSaved,
+                                'animes': favVm.savedAnimes
+                              });
+                        },
                       ),
                       _ListTileItem(
                         icon: Icons.check_circle_rounded,
                         color: AppColors.success,
-                        label: 'Completados',
+                        label: l.profileCompleted,
                         count: favVm.completedCount,
                         onTap: () {
                           if (!favVm.isLoaded) return;
                           Navigator.pushNamed(context, AppRoutes.listScreen,
-                              arguments: {'title': 'Completados', 'animes': favVm.completedAnimes});
+                              arguments: {
+                                'title': l.profileCompleted,
+                                'animes': favVm.completedAnimes
+                              });
                         },
                       ),
                       _ListTileItem(
                         icon: Icons.play_arrow_rounded,
                         color: AppColors.secondary,
-                        label: 'Viendo ahora',
+                        label: l.profileWatchingNow,
                         count: favVm.watchingCount,
                         onTap: () {
                           if (!favVm.isLoaded) return;
                           Navigator.pushNamed(context, AppRoutes.listScreen,
-                            arguments: {'title': 'Viendo ahora', 'animes': favVm.watchingAnimes});
+                              arguments: {
+                                'title': l.profileWatchingNow,
+                                'animes': favVm.watchingAnimes
+                              });
                         },
                       ),
                       _ListTileItem(
-                      icon: Icons.schedule_rounded,
-                      color: AppColors.warning,
-                      label: 'Pendientes',
-                      count: favVm.pendingCount,
-                      onTap: () {
+                        icon: Icons.schedule_rounded,
+                        color: AppColors.warning,
+                        label: l.profilePending,
+                        count: favVm.pendingCount,
+                        onTap: () {
                           if (!favVm.isLoaded) return;
                           Navigator.pushNamed(context, AppRoutes.listScreen,
-                          arguments: {'title': 'Pendientes', 'animes': favVm.pendingAnimes});
+                              arguments: {
+                                'title': l.profilePending,
+                                'animes': favVm.pendingAnimes
+                              });
                         },
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Configuración Dinámica ───────────────────────
-                      Text('Configuración', style: AppTextStyles.headline3),
+                      // ── Configuración ──────────────────────────────
+                      Text(l.profileSettings, style: AppTextStyles.headline3),
                       const SizedBox(height: 12),
                       _SettingItem(
                         icon: Icons.notifications_rounded,
-                        label: 'Notificaciones',
+                        label: l.profileNotifications,
                         trailing: Switch(
                           value: profileVm.notifications,
                           onChanged: (_) => profileVm.toggleNotifications(),
                           activeColor: AppColors.primary,
                         ),
                       ),
-                      _SettingItem(
-                        icon: Icons.language_rounded,
-                        label: 'Idioma preferido',
-                        value: profileVm.language,
-                        onTap: () {
-                          // Ejemplo rápido de actualización interactiva
-                          final nuevoIdioma = profileVm.language == 'Español' ? 'English' : 'Español';
-                          profileVm.setLanguage(nuevoIdioma);
-                        },
+
+                      // ── Idioma (cambia el locale real de la app) ───
+                      Consumer<LocaleViewModel>(
+                        builder: (context, locVm, _) => _SettingItem(
+                          icon: Icons.language_rounded,
+                          label: l.profileLanguage,
+                          value: locVm.locale?.languageCode == 'en'
+                              ? 'English'
+                              : 'Español',
+                          onTap: () {
+                            final next =
+                                locVm.locale?.languageCode == 'es'
+                                    ? const Locale('en')
+                                    : const Locale('es');
+                            locVm.setLocale(next);
+                          },
+                        ),
                       ),
+
                       _SettingItem(
                         icon: Icons.subtitles_rounded,
-                        label: 'Subtítulos por defecto',
+                        label: l.profileSubtitles,
                         value: profileVm.subtitles,
                         onTap: () {
-                          final nuevosSubs = profileVm.subtitles == 'Sub ES' ? 'Sub EN' : 'Sub ES';
+                          final nuevosSubs =
+                              profileVm.subtitles == 'Sub ES' ? 'Sub EN' : 'Sub ES';
                           profileVm.setSubtitles(nuevosSubs);
                         },
                       ),
                       _SettingItem(
                         icon: Icons.rate_review_rounded,
-                        label: 'Evaluar la app (Beta Testing)',
+                        label: l.profileEvaluate,
                         iconColor: AppColors.primary,
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.evaluation),
+                        onTap: () =>
+                            Navigator.pushNamed(context, AppRoutes.evaluation),
                       ),
                       _SettingItem(
                         icon: Icons.info_outline_rounded,
-                        label: 'Acerca de Library Anime',
-                        onTap: () => Navigator.pushNamed(context, AppRoutes.about),
+                        label: l.profileAbout,
+                        onTap: () =>
+                            Navigator.pushNamed(context, AppRoutes.about),
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Botón Cerrar Sesión ──────────────────────────
+                      // ── Cerrar sesión ──────────────────────────────
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: () {},
-                          icon: const Icon(Icons.logout_rounded, color: AppColors.error),
-                          label: Text('Cerrar sesión',
-                              style: AppTextStyles.button.copyWith(color: AppColors.error)),
+                          icon: const Icon(Icons.logout_rounded,
+                              color: AppColors.error),
+                          label: Text(l.profileLogout,
+                              style: AppTextStyles.button
+                                  .copyWith(color: AppColors.error)),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.error),
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                       ),
@@ -344,15 +388,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Widgets internos (Sin cambios, se mantiene tu UI limpia) ────
+// ── Widgets internos ────────────────────────────────────────────
 
 class _StatItem extends StatelessWidget {
   final String value;
   final String label;
   const _StatItem({required this.value, required this.label});
+
   @override
   Widget build(BuildContext context) => Column(children: [
-        Text(value, style: AppTextStyles.headline2.copyWith(color: AppColors.primary)),
+        Text(value,
+            style: AppTextStyles.headline2.copyWith(color: AppColors.primary)),
         const SizedBox(height: 2),
         Text(label, style: AppTextStyles.bodySmall),
       ]);
@@ -364,24 +410,36 @@ class _ListTileItem extends StatelessWidget {
   final String label;
   final int count;
   final VoidCallback? onTap;
-  const _ListTileItem({required this.icon, required this.color, required this.label, required this.count, this.onTap});
+  const _ListTileItem(
+      {required this.icon,
+      required this.color,
+      required this.label,
+      required this.count,
+      this.onTap});
+
   @override
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(10)),
         child: ListTile(
           onTap: onTap,
           leading: Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: color, size: 20),
           ),
           title: Text(label, style: AppTextStyles.bodyMedium),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('$count', style: AppTextStyles.label.copyWith(color: color)),
+            Text('$count',
+                style: AppTextStyles.label.copyWith(color: color)),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled, size: 20),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textDisabled, size: 20),
           ]),
         ),
       );
@@ -394,20 +452,32 @@ class _SettingItem extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   final Color? iconColor;
-  const _SettingItem({required this.icon, required this.label, this.value, this.trailing, this.onTap, this.iconColor});
+  const _SettingItem(
+      {required this.icon,
+      required this.label,
+      this.value,
+      this.trailing,
+      this.onTap,
+      this.iconColor});
+
   @override
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(10)),
         child: ListTile(
           onTap: onTap,
-          leading: Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 22),
+          leading:
+              Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 22),
           title: Text(label, style: AppTextStyles.bodyMedium),
           trailing: trailing ??
               Row(mainAxisSize: MainAxisSize.min, children: [
-                if (value != null) Text(value!, style: AppTextStyles.bodySmall),
+                if (value != null)
+                  Text(value!, style: AppTextStyles.bodySmall),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled, size: 20),
+                const Icon(Icons.chevron_right_rounded,
+                    color: AppColors.textDisabled, size: 20),
               ]),
         ),
       );

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/anime_data.dart';
-import '../navigation/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/anime_viewmodel.dart';
@@ -22,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Carga el catálogo via ViewModel al iniciar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AnimeViewModel>().loadAnimes();
     });
@@ -36,7 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Consumer escucha cambios del ViewModel reactivamente
+    final l = AppLocalizations.of(context)!;
+
     return Consumer<AnimeViewModel>(
       builder: (context, vm, _) {
         return Scaffold(
@@ -54,9 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Library', style: AppTextStyles.bodySmall),
+                      Text(l.homeSubtitle, style: AppTextStyles.bodySmall),
                       Text(
-                        'ANIME',
+                        l.homeTitle,
                         style: AppTextStyles.headline2.copyWith(
                           color: AppColors.primary,
                           letterSpacing: 4,
@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.tune_rounded),
                     color: AppColors.textSecondary,
-                    onPressed: () => _showFilterSheet(context, vm),
+                    onPressed: () => _showFilterSheet(context, vm, l),
                   ),
                 ],
               ),
@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onChanged: vm.setQuery,
                         style: AppTextStyles.searchText,
                         decoration: InputDecoration(
-                          hintText: 'Buscar por nombre, género, apodo...',
+                          hintText: l.homeSearchHint,
                           prefixIcon: const Icon(Icons.search_rounded,
                               color: AppColors.textDisabled, size: 20),
                           suffixIcon: _searchCtrl.text.isNotEmpty
@@ -176,7 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         children: [
                           Container(
-                            width: 4, height: 20,
+                            width: 4,
+                            height: 20,
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               borderRadius: BorderRadius.circular(2),
@@ -187,8 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             vm.selectedGenre != null ||
                                     vm.selectedPlatform != null ||
                                     vm.query.isNotEmpty
-                                ? '${vm.animes.length} resultado${vm.animes.length != 1 ? "s" : ""}'
-                                : 'Catálogo completo',
+                                ? (vm.animes.length == 1
+                                    ? l.homeResults(vm.animes.length)
+                                    : l.homeResultsPlural(vm.animes.length))
+                                : l.homeCatalog,
                             style: AppTextStyles.headline3,
                           ),
                           const Spacer(),
@@ -200,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 _searchCtrl.clear();
                                 vm.clearFilters();
                               },
-                              child: Text('Limpiar',
+                              child: Text(l.homeClear,
                                   style: AppTextStyles.label
                                       .copyWith(color: AppColors.primary)),
                             ),
@@ -224,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
               else if (vm.hasError)
                 SliverFillRemaining(
                   child: Center(
-                    child: Text(vm.errorMessage ?? 'Error desconocido',
+                    child: Text(vm.errorMessage ?? 'Error',
                         style: AppTextStyles.bodyMedium),
                   ),
                 )
@@ -239,9 +242,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Icon(Icons.search_off_rounded,
                             color: AppColors.textDisabled, size: 48),
                         const SizedBox(height: 12),
-                        Text('Sin resultados', style: AppTextStyles.headline3),
+                        Text(l.homeNoResults, style: AppTextStyles.headline3),
                         const SizedBox(height: 4),
-                        Text('Intenta con otro filtro',
+                        Text(l.homeNoResultsHint,
                             style: AppTextStyles.bodySmall),
                         const SizedBox(height: 16),
                         TextButton(
@@ -249,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _searchCtrl.clear();
                             vm.clearFilters();
                           },
-                          child: const Text('Limpiar filtros'),
+                          child: Text(l.homeClearFilters),
                         ),
                       ],
                     ),
@@ -262,8 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          AnimeCard(anime: vm.animes[index]),
+                      (context, index) => AnimeCard(anime: vm.animes[index]),
                       childCount: vm.animes.length,
                     ),
                     gridDelegate:
@@ -282,15 +284,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Filter Bottom Sheet ──────────────────────────────────
-  void _showFilterSheet(BuildContext context, AnimeViewModel vm) {
+  void _showFilterSheet(BuildContext context, AnimeViewModel vm, AppLocalizations l) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _FilterSheet(vm: vm),
+      builder: (_) => _FilterSheet(vm: vm, l: l),
     );
   }
 }
@@ -298,7 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
 // ── Filter Sheet ───────────────────────────────────────────
 class _FilterSheet extends StatelessWidget {
   final AnimeViewModel vm;
-  const _FilterSheet({required this.vm});
+  final AppLocalizations l;
+  const _FilterSheet({required this.vm, required this.l});
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +312,8 @@ class _FilterSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(2),
@@ -318,24 +321,28 @@ class _FilterSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Filtrar por Género', style: AppTextStyles.headline3),
+          Text(l.homeFilterGenre, style: AppTextStyles.headline3),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8, runSpacing: 8,
-            children: AnimeData.allGenres.map((g) => GenreChip(
-              genre: g,
-              isSelected: vm.selectedGenre == g,
-              onTap: () {
-                vm.setGenre(vm.selectedGenre == g ? null : g);
-                Navigator.pop(context);
-              },
-            )).toList(),
+            spacing: 8,
+            runSpacing: 8,
+            children: AnimeData.allGenres
+                .map((g) => GenreChip(
+                      genre: g,
+                      isSelected: vm.selectedGenre == g,
+                      onTap: () {
+                        vm.setGenre(vm.selectedGenre == g ? null : g);
+                        Navigator.pop(context);
+                      },
+                    ))
+                .toList(),
           ),
           const SizedBox(height: 20),
-          Text('Filtrar por Plataforma', style: AppTextStyles.headline3),
+          Text(l.homeFilterPlatform, style: AppTextStyles.headline3),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8, runSpacing: 8,
+            spacing: 8,
+            runSpacing: 8,
             children: AnimeData.allPlatforms.map((p) {
               final isSelected = vm.selectedPlatform == p;
               return GestureDetector(
@@ -345,8 +352,8 @@ class _FilterSheet extends StatelessWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary

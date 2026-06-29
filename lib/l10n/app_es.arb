@@ -13,7 +13,9 @@
   "homeSubtitle": "Library",
   "homeCatalog": "Catálogo completo",
   "homeResults": "{count} resultado",
+  "@homeResults": { "placeholders": { "count": { "type": "Object" } } },
   "homeResultsPlural": "{count} resultados",
+  "@homeResultsPlural": { "placeholders": { "count": { "type": "Object" } } },
   "homeClear": "Limpiar",
   "homeNoResults": "Sin resultados",
   "homeNoResultsHint": "Intenta con otro filtro o nombre",
@@ -53,8 +55,20 @@
   "detailCompleted": "Visto",
   "detailPending": "Pendiente",
   "detailSavedMsg": "{title} guardado en tu lista",
+  "@detailSavedMsg": { "placeholders": { "title": { "type": "Object" } } },
   "detailRemovedMsg": "{title} eliminado de tu lista",
+  "@detailRemovedMsg": { "placeholders": { "title": { "type": "Object" } } },
   "detailShareText": "🎌 {title} ({originalTitle})\n⭐ {rating}/10  ·  {episodes} eps  ·  {year}\n📺 Disponible en: {platforms}\n\nEncontrado en Library Anime 📱",
+  "@detailShareText": {
+    "placeholders": {
+      "title": { "type": "Object" },
+      "originalTitle": { "type": "Object" },
+      "rating": { "type": "Object" },
+      "episodes": { "type": "Object" },
+      "year": { "type": "Object" },
+      "platforms": { "type": "Object" }
+    }
+  },
 
   "profileMember": "Miembro desde enero 2026",
   "profileInLists": "En listas",
@@ -83,10 +97,32 @@
   "helpContactDesc": "Escríbenos directamente y te responderemos a la brevedad.",
   "helpContactBtn": "support@libraryanime.app",
 
+  "faq1Q": "¿Qué es Library Anime?",
+  "faq1A": "Library Anime es un catálogo unificado de anime. Te permite explorar miles de títulos, ver en qué plataformas de streaming están disponibles, leer sinopsis, filtrar por género o año, y guardar tus favoritos en listas personalizadas.",
+  "faq2Q": "¿Cómo busco un anime específico?",
+  "faq2A": "Ve a la pestaña \"Buscar\" en el menú inferior. Puedes buscar por nombre, título alternativo (apodo en japonés o romaji), género, estudio de animación o año de emisión. Los resultados se actualizan en tiempo real.",
+  "faq3Q": "¿Cómo sé en qué plataforma puedo ver un anime?",
+  "faq3A": "En la pantalla de detalle de cada anime encontrarás la sección \"Disponible en\", que muestra los íconos de las plataformas de streaming donde está disponible (Crunchyroll, Netflix, HiDive, Amazon Prime, Disney+).",
+  "faq4Q": "¿Puedo guardar animes en listas?",
+  "faq4A": "Sí. Desde la pantalla de detalle de cualquier anime puedes agregarlo a tus listas: Guardados, Viendo ahora, Completados o Pendientes. Accede a tus listas desde la sección Perfil.",
+  "faq5Q": "¿La información está actualizada?",
+  "faq5A": "Library Anime utiliza datos de APIs oficiales (MyAnimeList / AniList) que se actualizan periódicamente. Los nuevos episodios y temporadas se reflejan automáticamente en el catálogo.",
+  "faq6Q": "¿Puedo usar la app sin conexión?",
+  "faq6A": "La búsqueda y el catálogo requieren conexión a internet. Sin embargo, tus listas personales y los animes que hayas visitado recientemente estarán disponibles en modo offline de forma limitada.",
+  "faq7Q": "¿Cómo reporto un error o información incorrecta?",
+  "faq7A": "Puedes contactarnos a través de support@libraryanime.app o usar el botón \"Reportar\" dentro de la pantalla de detalle de cualquier anime. Respondemos en un plazo máximo de 48 horas hábiles.",
+
   "aboutTitle": "Acerca de",
   "aboutVersion": "Version {version} · {year}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": { "type": "Object" },
+      "year": { "type": "Object" }
+    }
+  },
   "aboutBadge": "Maqueta Funcional · PDS1 2026",
-  "aboutPurpose": "Proposito de la aplicación",
+  "aboutPurpose": "Propósito de la aplicación",
+  "aboutPurposeText": "Library Anime nace de una necesidad real: la información sobre el anime está fragmentada en decenas de plataformas de streaming y sitios externos, obligando al usuario a abrir múltiples apps para encontrar un solo título.\n\nEsta aplicación centraliza el catálogo, indica la disponibilidad por plataforma, integra reseñas de la comunidad y permite filtrar por género, año y nombre —incluyendo títulos alternativos y apodos en japonés— todo desde una sola interfaz móvil.",
 
   "evalTitle": "Evaluación Beta",
   "evalBanner": "Beta Testing",
@@ -102,5 +138,10 @@
   "listEmpty": "No hay animes en esta lista",
   "listEmptyHint": "Explora el catálogo principal para añadir tus series favoritas.",
 
-  "splashTagline": "Tu catálogo unificado de anime"
+  "splashTagline": "Tu catálogo unificado de anime",
+
+  "statusAiring": "En Emisión",
+  "statusFinished": "Finalizado",
+  "statusUpcoming": "Próximamente",
+  "airing": "EN EMISIÓN"
 }

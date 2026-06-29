@@ -7,41 +7,13 @@ class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
   List<_FaqItem> _faqs(AppLocalizations l) => [
-        _FaqItem(
-          question: '¿Qué es Library Anime?',
-          answer:
-              'Library Anime es un catálogo unificado de anime. Te permite explorar miles de títulos, ver en qué plataformas de streaming están disponibles, leer sinopsis, filtrar por género o año, y guardar tus favoritos en listas personalizadas.',
-        ),
-        _FaqItem(
-          question: '¿Cómo busco un anime específico?',
-          answer:
-              'Ve a la pestaña "Buscar" en el menú inferior. Puedes buscar por nombre, título alternativo (apodo en japonés o romaji), género, estudio de animación o año de emisión. Los resultados se actualizan en tiempo real.',
-        ),
-        _FaqItem(
-          question: '¿Cómo sé en qué plataforma puedo ver un anime?',
-          answer:
-              'En la pantalla de detalle de cada anime encontrarás la sección "Disponible en", que muestra los íconos de las plataformas de streaming donde está disponible.',
-        ),
-        _FaqItem(
-          question: '¿Puedo guardar animes en listas?',
-          answer:
-              'Sí. Desde la pantalla de detalle de cualquier anime puedes agregarlo a tus listas: Guardados, Viendo ahora, Completados o Pendientes.',
-        ),
-        _FaqItem(
-          question: '¿La información está actualizada?',
-          answer:
-              'Library Anime utiliza datos de APIs oficiales (MyAnimeList / AniList) que se actualizan periódicamente.',
-        ),
-        _FaqItem(
-          question: '¿Puedo usar la app sin conexión?',
-          answer:
-              'La búsqueda y el catálogo requieren conexión a internet. Sin embargo, tus listas personales estarán disponibles en modo offline de forma limitada.',
-        ),
-        _FaqItem(
-          question: '¿Cómo reporto un error o información incorrecta?',
-          answer:
-              'Puedes contactarnos a través de support@libraryanime.app o usar el botón "Reportar" dentro de la pantalla de detalle de cualquier anime.',
-        ),
+        _FaqItem(question: l.faq1Q, answer: l.faq1A),
+        _FaqItem(question: l.faq2Q, answer: l.faq2A),
+        _FaqItem(question: l.faq3Q, answer: l.faq3A),
+        _FaqItem(question: l.faq4Q, answer: l.faq4A),
+        _FaqItem(question: l.faq5Q, answer: l.faq5A),
+        _FaqItem(question: l.faq6Q, answer: l.faq6A),
+        _FaqItem(question: l.faq7Q, answer: l.faq7A),
       ];
 
   @override
@@ -57,7 +29,7 @@ class HelpScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Banner ────────────────────────────────────────────
+          // ── Banner ──────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -102,7 +74,7 @@ class HelpScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // ── Contacto ──────────────────────────────────────────
+          // ── Contacto ────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -164,9 +136,11 @@ class _FaqTile extends StatelessWidget {
           collapsedIconColor: AppColors.textSecondary,
           title: Text(item.question, style: AppTextStyles.bodyMedium),
           children: [
-            Text(item.answer,
-                style: AppTextStyles.bodySmall
-                    .copyWith(height: 1.6, color: AppColors.textSecondary)),
+            Text(
+              item.answer,
+              style: AppTextStyles.bodySmall
+                  .copyWith(height: 1.6, color: AppColors.textSecondary),
+            ),
           ],
         ),
       ),

@@ -165,12 +165,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String detailShareText(
-    Object episodes,
-    Object originalTitle,
-    Object platforms,
-    Object rating,
     Object title,
+    Object originalTitle,
+    Object rating,
+    Object episodes,
     Object year,
+    Object platforms,
   ) {
     return '🎌 $title ($originalTitle)\n⭐ $rating/10  ·  $episodes eps  ·  $year\n📺 Available on: $platforms\n\nFound on Library Anime 📱';
   }
@@ -253,6 +253,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpContactBtn => 'support@libraryanime.app';
 
   @override
+  String get faq1Q => 'What is Library Anime?';
+
+  @override
+  String get faq1A =>
+      'Library Anime is a unified anime catalog. It lets you explore thousands of titles, see which streaming platforms they\'re available on, read synopses, filter by genre or year, and save your favorites to personal lists.';
+
+  @override
+  String get faq2Q => 'How do I search for a specific anime?';
+
+  @override
+  String get faq2A =>
+      'Go to the \"Search\" tab in the bottom menu. You can search by name, alternative title (Japanese nickname or romaji), genre, animation studio, or release year. Results update in real time.';
+
+  @override
+  String get faq3Q => 'How do I know which platform streams an anime?';
+
+  @override
+  String get faq3A =>
+      'On each anime\'s detail screen you\'ll find the \"Available on\" section, which shows icons for the streaming platforms where it\'s available (Crunchyroll, Netflix, HiDive, Amazon Prime, Disney+).';
+
+  @override
+  String get faq4Q => 'Can I save anime to lists?';
+
+  @override
+  String get faq4A =>
+      'Yes. From any anime\'s detail screen you can add it to your lists: Saved, Watching, Completed or Pending. Access your lists from the Profile section.';
+
+  @override
+  String get faq5Q => 'Is the information up to date?';
+
+  @override
+  String get faq5A =>
+      'Library Anime uses data from official APIs (MyAnimeList / AniList) that are updated periodically. New episodes and seasons are automatically reflected in the catalog.';
+
+  @override
+  String get faq6Q => 'Can I use the app offline?';
+
+  @override
+  String get faq6A =>
+      'Search and the catalog require an internet connection. However, your personal lists and recently visited anime will be available in offline mode in a limited capacity.';
+
+  @override
+  String get faq7Q => 'How do I report an error or incorrect information?';
+
+  @override
+  String get faq7A =>
+      'You can contact us at support@libraryanime.app or use the \"Report\" button on any anime\'s detail screen. We respond within a maximum of 48 business hours.';
+
+  @override
   String get aboutTitle => 'About';
 
   @override
@@ -265,6 +314,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutPurpose => 'App purpose';
+
+  @override
+  String get aboutPurposeText =>
+      'Library Anime was born from a real need: anime information is fragmented across dozens of streaming platforms and external sites, forcing users to open multiple apps to find a single title.\n\nThis application centralizes the catalog, shows platform availability, integrates community reviews, and allows filtering by genre, year, and name — including alternative titles and Japanese nicknames — all from a single mobile interface.';
 
   @override
   String get evalTitle => 'Beta Evaluation';
@@ -308,4 +361,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get splashTagline => 'Your unified anime catalog';
+
+  @override
+  String get statusAiring => 'Airing';
+
+  @override
+  String get statusFinished => 'Finished';
+
+  @override
+  String get statusUpcoming => 'Upcoming';
+
+  @override
+  String get airing => 'AIRING';
 }

@@ -37,7 +37,7 @@ dependencies:
   cloud_firestore: ^5.4.4
   firebase_auth: ^5.3.1
   firebase_storage: ^12.3.2
-  
+  http: ^1.2.2
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
   cupertino_icons: ^1.0.8

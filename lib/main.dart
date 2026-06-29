@@ -33,7 +33,6 @@ void main() async {
     systemNavigationBarIconBrightness: Brightness.light,
   ));
 
-  // Cargar locale guardado antes de arrancar la app
   final localeVm = LocaleViewModel();
   await localeVm.load();
 
@@ -46,12 +45,20 @@ class LibraryAnimeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Crear los viewmodels aquí para poder inyectar dependencias
+    final favoritesVm = FavoritesViewModel();
+    final animeVm = AnimeViewModel();
+
+    // Inyectar FavoritesViewModel en AnimeViewModel para sincronizar
+    // el catálogo cuando se cargue desde AniList
+    animeVm.setFavoritesViewModel(favoritesVm);
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AnimeViewModel()),
+        ChangeNotifierProvider.value(value: animeVm),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
-        ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+        ChangeNotifierProvider.value(value: favoritesVm),
         ChangeNotifierProvider.value(value: localeVm),
       ],
       child: Consumer<LocaleViewModel>(

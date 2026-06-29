@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/anime.dart';
-import '../models/anime_data.dart';
 
 /// Persiste las listas del usuario usando shared_preferences.
-/// Clave: lista:<tipo>  →  valor: IDs separados por coma
+/// Compatible con catálogo dinámico de AniList:
+/// guarda los IDs y recibe el catálogo actual para resolver los animes.
 class FavoritesViewModel extends ChangeNotifier {
   static const _keySaved     = 'list:saved';
   static const _keyWatching  = 'list:watching';
@@ -16,6 +16,9 @@ class FavoritesViewModel extends ChangeNotifier {
   final Set<String> _watching  = {};
   final Set<String> _completed = {};
   final Set<String> _pending   = {};
+
+  // Catálogo actual — se actualiza desde AnimeViewModel
+  List<Anime> _catalog = [];
 
   bool _loaded = false;
 
@@ -37,9 +40,16 @@ class FavoritesViewModel extends ChangeNotifier {
   List<Anime> get completedAnimes => _idsToAnimes(_completed);
   List<Anime> get pendingAnimes   => _idsToAnimes(_pending);
 
+  // ── Actualizar catálogo desde AnimeViewModel ──────────────
+  /// Llamar desde AnimeViewModel después de cargar el catálogo.
+  void updateCatalog(List<Anime> catalog) {
+    _catalog = catalog;
+    notifyListeners();
+  }
+
   // ── Cargar desde disco ────────────────────────────────────
   Future<void> load() async {
-    if (_loaded) return; // ← evita recargar si ya tiene datos en memoria
+    if (_loaded) return;
     final prefs = await SharedPreferences.getInstance();
     _saved    .addAll(_read(prefs, _keySaved));
     _watching .addAll(_read(prefs, _keyWatching));
@@ -93,7 +103,10 @@ class FavoritesViewModel extends ChangeNotifier {
     await prefs.setString(key, set.join(','));
   }
 
+  /// Resuelve IDs contra el catálogo dinámico actual.
+  /// Si el catálogo aún no cargó, retorna lista vacía.
   List<Anime> _idsToAnimes(Set<String> ids) {
-    return AnimeData.catalog.where((a) => ids.contains(a.id)).toList();
+    if (_catalog.isEmpty) return [];
+    return _catalog.where((a) => ids.contains(a.id)).toList();
   }
 }

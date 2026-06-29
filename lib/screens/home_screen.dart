@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
+  final ScrollController _scrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -24,11 +25,24 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AnimeViewModel>().loadAnimes();
     });
+
+    // Detectar cuando el usuario llega al 90% del scroll
+    _scrollCtrl.addListener(() {
+      final vm = context.read<AnimeViewModel>();
+      if (_scrollCtrl.position.pixels >=
+              _scrollCtrl.position.maxScrollExtent * 0.9 &&
+          !vm.isLoadingMore &&
+          vm.hasMore &&
+          !vm.isLoading) {
+        vm.loadMore();
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -41,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           body: CustomScrollView(
+            controller: _scrollCtrl,
             slivers: [
               // ── AppBar ──────────────────────────────────────
               SliverAppBar(
@@ -48,12 +63,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: AppColors.background,
                 expandedHeight: 110,
                 flexibleSpace: FlexibleSpaceBar(
-                  titlePadding: const EdgeInsets.only(left: 16, bottom: 12),
+                  titlePadding:
+                      const EdgeInsets.only(left: 16, bottom: 12),
                   title: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l.homeSubtitle, style: AppTextStyles.bodySmall),
+                      Text(l.homeSubtitle,
+                          style: AppTextStyles.bodySmall),
                       Text(
                         l.homeTitle,
                         style: AppTextStyles.headline2.copyWith(
@@ -66,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 actions: [
-                  // Botón refresh manual
                   IconButton(
                     icon: const Icon(Icons.refresh_rounded),
                     color: AppColors.textSecondary,
@@ -75,7 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.tune_rounded),
                     color: AppColors.textSecondary,
-                    onPressed: () => _showFilterSheet(context, vm, l),
+                    onPressed: () =>
+                        _showFilterSheet(context, vm, l),
                   ),
                 ],
               ),
@@ -87,15 +104,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     // ── Banner offline ─────────────────────────
                     if (vm.isOffline)
                       Container(
-                        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        margin:
+                            const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.15),
+                          color: AppColors.warning
+                              .withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color:
-                                  AppColors.warning.withValues(alpha: 0.4)),
+                              color: AppColors.warning
+                                  .withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           children: [
@@ -113,7 +132,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // ── Buscador ───────────────────────────────
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: TextField(
                         controller: _searchCtrl,
                         onChanged: vm.setQuery,
@@ -139,13 +159,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ── Chips género (dinámicos desde API) ─────
+                    // ── Chips género ───────────────────────────
                     if (vm.allGenres.isNotEmpty)
                       SizedBox(
                         height: 36,
                         child: ListView.separated(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16),
                           scrollDirection: Axis.horizontal,
                           itemCount: vm.allGenres.length,
                           separatorBuilder: (_, __) =>
@@ -156,7 +176,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               genre: genre,
                               isSelected: vm.selectedGenre == genre,
                               onTap: () => vm.setGenre(
-                                vm.selectedGenre == genre ? null : genre,
+                                vm.selectedGenre == genre
+                                    ? null
+                                    : genre,
                               ),
                             );
                           },
@@ -165,13 +187,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 12),
 
-                    // ── Chips plataforma (dinámicos desde API) ─
+                    // ── Chips plataforma ───────────────────────
                     if (vm.allPlatforms.isNotEmpty)
                       SizedBox(
                         height: 36,
                         child: ListView.separated(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16),
                           scrollDirection: Axis.horizontal,
                           itemCount: vm.allPlatforms.length,
                           separatorBuilder: (_, __) =>
@@ -193,7 +215,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: isSelected
                                       ? AppColors.primary
                                       : AppColors.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius:
+                                      BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   platform,
@@ -258,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // ── Loading ────────────────────────────────────
+              // ── Loading inicial ────────────────────────────
               if (vm.isLoading)
                 const SliverFillRemaining(
                   child: Center(
@@ -293,7 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ElevatedButton.icon(
                             onPressed: () =>
                                 vm.loadAnimes(forceRefresh: true),
-                            icon: const Icon(Icons.refresh_rounded),
+                            icon:
+                                const Icon(Icons.refresh_rounded),
                             label: const Text('Reintentar'),
                           ),
                         ],
@@ -331,9 +355,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
 
               // ── Grilla ────────────────────────────────────
-              else
+              else ...[
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) =>
@@ -349,6 +373,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+
+                // ── Indicador "cargando más" ───────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: vm.isLoadingMore
+                          ? const CircularProgressIndicator(
+                              color: AppColors.primary, strokeWidth: 2)
+                          : vm.hasMore
+                              ? const SizedBox.shrink()
+                              : Text(
+                                  '— Fin del catálogo —',
+                                  style: AppTextStyles.bodySmall,
+                                ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -404,7 +447,8 @@ class _FilterSheet extends StatelessWidget {
                       genre: g,
                       isSelected: vm.selectedGenre == g,
                       onTap: () {
-                        vm.setGenre(vm.selectedGenre == g ? null : g);
+                        vm.setGenre(
+                            vm.selectedGenre == g ? null : g);
                         Navigator.pop(context);
                       },
                     ))

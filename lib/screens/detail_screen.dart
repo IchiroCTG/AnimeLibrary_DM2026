@@ -16,13 +16,12 @@ class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key, required this.anime});
 
   void _share(AppLocalizations l) {
-    final platforms = anime.platforms.join(', ');
     Share.share(
       l.detailShareText(
         anime.episodes,
         anime.originalTitle,
-        platforms,
-        anime.rating,
+        anime.platforms.join(', '),
+        anime.rating.toStringAsFixed(1),
         anime.title,
         anime.releaseYear,
       ),
@@ -119,15 +118,21 @@ class DetailScreen extends StatelessWidget {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        anime.coverUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: AppColors.surfaceVariant,
-                          child: const Icon(Icons.image_not_supported_outlined,
-                              color: AppColors.textDisabled, size: 48),
-                        ),
-                      ),
+                      // Portada desde URL de AniList
+                      anime.coverUrl.isNotEmpty
+                          ? Image.network(
+                              anime.coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: AppColors.surfaceVariant,
+                                child: const Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: AppColors.textDisabled,
+                                    size: 48),
+                              ),
+                            )
+                          : Container(color: AppColors.surfaceVariant),
+
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -141,6 +146,7 @@ class DetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+
                       Positioned(
                         bottom: 16,
                         left: 16,
@@ -148,6 +154,7 @@ class DetailScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Badge de estado localizado
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
@@ -158,7 +165,8 @@ class DetailScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                anime.status.toUpperCase(),
+                                _localizedStatus(anime.status, l)
+                                    .toUpperCase(),
                                 style: AppTextStyles.labelSmall.copyWith(
                                   color: Colors.black87,
                                   fontSize: 10,
@@ -167,10 +175,11 @@ class DetailScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(anime.title, style: AppTextStyles.headline1),
+                            Text(anime.title,
+                                style: AppTextStyles.headline1),
                             Text(anime.originalTitle,
-                                style: AppTextStyles.label
-                                    .copyWith(color: AppColors.textSecondary)),
+                                style: AppTextStyles.label.copyWith(
+                                    color: AppColors.textSecondary)),
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -201,35 +210,41 @@ class DetailScreen extends StatelessWidget {
                       _QuickLists(anime: anime, favVm: favVm, l: l),
                       const SizedBox(height: 24),
 
-                      // ── Géneros ───────────────────────────────
+                      // ── Géneros (datos reales de AniList) ─────
                       _SectionHeader(title: l.detailGenres),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: anime.genres
-                            .map((g) => GenreChip(genre: g))
-                            .toList(),
-                      ),
+                      anime.genres.isEmpty
+                          ? Text('—', style: AppTextStyles.bodySmall)
+                          : Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: anime.genres
+                                  .map((g) => GenreChip(genre: g))
+                                  .toList(),
+                            ),
                       const SizedBox(height: 24),
 
-                      // ── Disponible en ─────────────────────────
+                      // ── Plataformas (datos reales de AniList) ─
                       _SectionHeader(title: l.detailAvailableOn),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: anime.platforms
-                            .map((p) => PlatformBadge(platform: p))
-                            .toList(),
-                      ),
+                      anime.platforms.isEmpty
+                          ? Text('—', style: AppTextStyles.bodySmall)
+                          : Wrap(
+                              spacing: 10,
+                              runSpacing: 8,
+                              children: anime.platforms
+                                  .map((p) => PlatformBadge(platform: p))
+                                  .toList(),
+                            ),
                       const SizedBox(height: 24),
 
-                      // ── Sinopsis ──────────────────────────────
+                      // ── Sinopsis (datos reales de AniList) ────
                       _SectionHeader(title: l.detailSynopsis),
                       const SizedBox(height: 10),
                       Text(
-                        anime.synopsis,
+                        anime.synopsis.isNotEmpty
+                            ? anime.synopsis
+                            : '—',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                           height: 1.7,
@@ -248,23 +263,32 @@ class DetailScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             _InfoRow(
-                                label: l.detailStudio, value: anime.studio),
+                                label: l.detailStudio,
+                                value: anime.studio.isNotEmpty
+                                    ? anime.studio
+                                    : '—'),
                             _Divider(),
                             _InfoRow(
                                 label: l.detailYear,
-                                value: '${anime.releaseYear}'),
+                                value: anime.releaseYear > 0
+                                    ? '${anime.releaseYear}'
+                                    : '—'),
                             _Divider(),
                             _InfoRow(
                                 label: l.detailEpisodes,
-                                value: '${anime.episodes}'),
+                                value: anime.episodes > 0
+                                    ? '${anime.episodes}'
+                                    : '—'),
                             _Divider(),
                             _InfoRow(
-                                label: l.detailStatus, value: anime.status),
+                                label: l.detailStatus,
+                                value: _localizedStatus(
+                                    anime.status, l)),
                             if (anime.tags.isNotEmpty) ...[
                               _Divider(),
                               _InfoRow(
                                 label: l.detailAltTitles,
-                                value: anime.tags.join('  ·  '),
+                                value: anime.tags.take(3).join('  ·  '),
                               ),
                             ],
                           ],
@@ -299,7 +323,8 @@ class DetailScreen extends StatelessWidget {
                             const SizedBox(width: 24),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text(l.detailScoreSource,
                                       style: AppTextStyles.bodyMedium),
@@ -307,12 +332,19 @@ class DetailScreen extends StatelessWidget {
                                   Text(l.detailScoreDesc,
                                       style: AppTextStyles.bodySmall),
                                   const SizedBox(height: 12),
+                                  // Las barras se calculan desde el rating real
                                   _RatingProgress(
-                                      label: l.detailStory, value: 0.92),
+                                      label: l.detailStory,
+                                      value: (anime.rating / 10)
+                                          .clamp(0.0, 1.0)),
                                   _RatingProgress(
-                                      label: l.detailAnimation, value: 0.88),
+                                      label: l.detailAnimation,
+                                      value: ((anime.rating - 0.3) / 10)
+                                          .clamp(0.0, 1.0)),
                                   _RatingProgress(
-                                      label: l.detailCharacters, value: 0.90),
+                                      label: l.detailCharacters,
+                                      value: ((anime.rating - 0.1) / 10)
+                                          .clamp(0.0, 1.0)),
                                 ],
                               ),
                             ),
@@ -339,6 +371,23 @@ class DetailScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Traduce el status que viene de AniList al idioma actual.
+  String _localizedStatus(String status, AppLocalizations l) {
+    switch (status) {
+      case 'En Emisión':
+      case 'RELEASING':
+        return l.statusAiring;
+      case 'Finalizado':
+      case 'FINISHED':
+        return l.statusFinished;
+      case 'Próximamente':
+      case 'NOT_YET_RELEASED':
+        return l.statusUpcoming;
+      default:
+        return status;
+    }
   }
 }
 
@@ -418,10 +467,12 @@ class _ListBtn extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color:
-              active ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color: active
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active ? color : AppColors.surfaceVariant,
@@ -430,7 +481,8 @@ class _ListBtn extends StatelessWidget {
         child: Column(
           children: [
             Icon(icon,
-                color: active ? color : AppColors.textDisabled, size: 22),
+                color: active ? color : AppColors.textDisabled,
+                size: 22),
             const SizedBox(height: 4),
             Text(
               label,
@@ -475,7 +527,8 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -533,7 +586,8 @@ class _RatingProgress extends StatelessWidget {
             Text(
               (value * 10).toStringAsFixed(1),
               style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.warning, fontWeight: FontWeight.w700),
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w700),
             ),
           ],
         ),

@@ -4,41 +4,46 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/anime.dart';
 import 'anilist_service.dart';
 
-/// Repositorio que combina AniList API + caché local (SharedPreferences).
+/// Repositorio con paginación y caché offline.
 /// Estrategia Offline-First:
-///   1. Intenta obtener datos frescos de la API.
-///   2. Si hay error o timeout, retorna la última caché válida.
-///   3. Si no hay caché, lanza excepción.
+///   1. Intenta API → guarda en caché.
+///   2. Sin red → retorna última caché válida.
+///   3. Sin caché → lista vacía.
 class AniListRepository {
-  static const _keyCatalog  = 'cache:anilist:catalog';
+  static const _keyCatalog   = 'cache:anilist:catalog';
   static const _keyTimestamp = 'cache:anilist:timestamp';
-  // Caché válida por 1 hora
-  static const _cacheTtlMs  = 3600000;
+  static const _cacheTtlMs   = 3600000; // 1 hora
+  static const _perPage      = 50;
 
   final AniListService _service;
 
   AniListRepository({AniListService? service})
       : _service = service ?? AniListService();
 
-  // ── Obtener catálogo ──────────────────────────────────────
+  // ── Página inicial (refresh o primer arranque) ────────────
   Future<List<Anime>> getCatalog({bool forceRefresh = false}) async {
-    // Si no se fuerza refresh y hay caché vigente, la retornamos
     if (!forceRefresh && await _isCacheValid()) {
       final cached = await _loadFromCache();
-      if (cached != null) return cached;
+      if (cached != null && cached.isNotEmpty) return cached;
     }
 
     try {
-      final animes = await _service.fetchCatalog(perPage: 30);
+      final animes =
+          await _service.fetchCatalog(page: 1, perPage: _perPage);
       await _saveToCache(animes);
       return animes;
-    } catch (e) {
-      // Fallback: intentar caché aunque esté vencida
+    } catch (_) {
       final cached = await _loadFromCache();
-      if (cached != null) return cached;
+      return cached ?? [];
+    }
+  }
 
-      // Si no hay caché, usar datos estáticos como último recurso
-      return _staticFallback();
+  // ── Cargar página adicional (scroll infinito) ─────────────
+  Future<List<Anime>> loadPage(int page) async {
+    try {
+      return await _service.fetchCatalog(page: page, perPage: _perPage);
+    } catch (_) {
+      return [];
     }
   }
 
@@ -46,8 +51,7 @@ class AniListRepository {
   Future<List<Anime>> search(String query, {String? genre}) async {
     try {
       return await _service.search(query, genre: genre);
-    } catch (e) {
-      // En offline, filtrar sobre la caché local
+    } catch (_) {
       final cached = await _loadFromCache();
       if (cached == null) return [];
       final q = query.toLowerCase();
@@ -68,8 +72,7 @@ class AniListRepository {
     final prefs = await SharedPreferences.getInstance();
     final ts = prefs.getInt(_keyTimestamp);
     if (ts == null) return false;
-    final age = DateTime.now().millisecondsSinceEpoch - ts;
-    return age < _cacheTtlMs;
+    return DateTime.now().millisecondsSinceEpoch - ts < _cacheTtlMs;
   }
 
   Future<List<Anime>?> _loadFromCache() async {
@@ -78,7 +81,9 @@ class AniListRepository {
     if (raw == null) return null;
     try {
       final list = jsonDecode(raw) as List<dynamic>;
-      return list.map((e) => _animeFromMap(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => _animeFromMap(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
@@ -86,13 +91,13 @@ class AniListRepository {
 
   Future<void> _saveToCache(List<Anime> animes) async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(animes.map(_animeToMap).toList());
-    await prefs.setString(_keyCatalog, encoded);
+    await prefs.setString(
+        _keyCatalog, jsonEncode(animes.map(_animeToMap).toList()));
     await prefs.setInt(
         _keyTimestamp, DateTime.now().millisecondsSinceEpoch);
   }
 
-  // ── Serialización Anime ←→ Map ────────────────────────────
+  // ── Serialización ─────────────────────────────────────────
   Map<String, dynamic> _animeToMap(Anime a) => {
         'id': a.id,
         'title': a.title,
@@ -126,23 +131,4 @@ class AniListRepository {
         trailerUrl: m['trailerUrl'] as String?,
         tags: List<String>.from(m['tags'] as List? ?? []),
       );
-
-  // ── Fallback estático (sin red y sin caché) ───────────────
-  List<Anime> _staticFallback() => const [
-        Anime(
-          id: 'offline_001',
-          title: 'Sin conexión',
-          originalTitle: 'オフライン',
-          synopsis:
-              'No se pudo cargar el catálogo. Verifica tu conexión a internet e intenta de nuevo.',
-          coverUrl: '',
-          rating: 0.0,
-          releaseYear: 0,
-          episodes: 0,
-          status: 'Desconocido',
-          genres: [],
-          platforms: [],
-          studio: '',
-        ),
-      ];
 }

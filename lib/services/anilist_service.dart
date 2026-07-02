@@ -9,57 +9,69 @@ import '../models/anime.dart';
 class AniListService {
   static const _url = 'https://graphql.anilist.co';
 
-  // ── Query GraphQL ─────────────────────────────────────────
-  // Retorna los top animes por popularidad con todos los campos
-  // que necesita el modelo Anime.
-  static const _query = r'''
+  static const _catalogQuery = r'''
   query ($page: Int, $perPage: Int) {
     Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
       media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
         id
-        title {
-          romaji
-          english
-          native
-        }
+        title { romaji english native }
         description(asHtml: false)
-        coverImage {
-          large
-          extraLarge
-        }
+        coverImage { large extraLarge }
         averageScore
-        startDate {
-          year
-        }
+        startDate { year }
         episodes
         status
         genres
-        studios(isMain: true) {
-          nodes {
-            name
-          }
-        }
-        trailer {
-          id
-          site
-        }
+        studios(isMain: true) { nodes { name } }
+        trailer { id site }
         synonyms
-        streamingEpisodes {
-          site
-        }
+        streamingEpisodes { site }
       }
     }
   }
   ''';
 
-  // ── Fetch catálogo ────────────────────────────────────────
-  Future<List<Anime>> fetchCatalog({int page = 1, int perPage = 20}) async {
+  static const _searchQuery = r'''
+  query ($search: String, $genre: String, $page: Int, $perPage: Int) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
+      media(
+        type: ANIME,
+        search: $search,
+        genre: $genre,
+        isAdult: false,
+        sort: POPULARITY_DESC
+      ) {
+        id
+        title { romaji english native }
+        description(asHtml: false)
+        coverImage { large extraLarge }
+        averageScore
+        startDate { year }
+        episodes
+        status
+        genres
+        studios(isMain: true) { nodes { name } }
+        trailer { id site }
+        synonyms
+        streamingEpisodes { site }
+      }
+    }
+  }
+  ''';
+
+  // ── Catálogo paginado ─────────────────────────────────────
+  Future<({List<Anime> animes, bool hasNextPage})> fetchCatalog({
+    int page = 1,
+    int perPage = 50,
+  }) async {
     final response = await http
         .post(
           Uri.parse(_url),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'query': _query,
+            'query': _catalogQuery,
             'variables': {'page': page, 'perPage': perPage},
           }),
         )
@@ -70,46 +82,30 @@ class AniListService {
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final mediaList =
-        data['data']['Page']['media'] as List<dynamic>;
+    final page0 = data['data']['Page'] as Map<String, dynamic>;
+    final hasNext =
+        (page0['pageInfo'] as Map<String, dynamic>)['hasNextPage'] as bool;
+    final mediaList = page0['media'] as List<dynamic>;
 
-    return mediaList
-        .map((m) => _mapToAnime(m as Map<String, dynamic>))
-        .toList();
+    return (
+      animes: mediaList
+          .map((m) => _mapToAnime(m as Map<String, dynamic>))
+          .toList(),
+      hasNextPage: hasNext,
+    );
   }
 
-  // ── Búsqueda por texto ────────────────────────────────────
-  Future<List<Anime>> search(String query,
-      {String? genre, int perPage = 20}) async {
-    const searchQuery = r'''
-    query ($search: String, $genre: String, $perPage: Int) {
-      Page(perPage: $perPage) {
-        media(
-          type: ANIME,
-          search: $search,
-          genre: $genre,
-          isAdult: false,
-          sort: POPULARITY_DESC
-        ) {
-          id
-          title { romaji english native }
-          description(asHtml: false)
-          coverImage { large extraLarge }
-          averageScore
-          startDate { year }
-          episodes
-          status
-          genres
-          studios(isMain: true) { nodes { name } }
-          trailer { id site }
-          synonyms
-          streamingEpisodes { site }
-        }
-      }
-    }
-    ''';
-
-    final variables = <String, dynamic>{'perPage': perPage};
+  // ── Búsqueda paginada ─────────────────────────────────────
+  Future<({List<Anime> animes, bool hasNextPage})> search(
+    String query, {
+    String? genre,
+    int page = 1,
+    int perPage = 30,
+  }) async {
+    final variables = <String, dynamic>{
+      'page': page,
+      'perPage': perPage,
+    };
     if (query.isNotEmpty) variables['search'] = query;
     if (genre != null) variables['genre'] = genre;
 
@@ -117,7 +113,10 @@ class AniListService {
         .post(
           Uri.parse(_url),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'query': searchQuery, 'variables': variables}),
+          body: jsonEncode({
+            'query': _searchQuery,
+            'variables': variables,
+          }),
         )
         .timeout(const Duration(seconds: 10));
 
@@ -126,10 +125,17 @@ class AniListService {
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final mediaList = data['data']['Page']['media'] as List<dynamic>;
-    return mediaList
-        .map((m) => _mapToAnime(m as Map<String, dynamic>))
-        .toList();
+    final page0 = data['data']['Page'] as Map<String, dynamic>;
+    final hasNext =
+        (page0['pageInfo'] as Map<String, dynamic>)['hasNextPage'] as bool;
+    final mediaList = page0['media'] as List<dynamic>;
+
+    return (
+      animes: mediaList
+          .map((m) => _mapToAnime(m as Map<String, dynamic>))
+          .toList(),
+      hasNextPage: hasNext,
+    );
   }
 
   // ── Mapeo JSON → Anime ────────────────────────────────────
@@ -141,65 +147,50 @@ class AniListService {
     final originalTitle =
         (titles['native'] as String?) ?? (titles['romaji'] as String?) ?? '';
 
-    // Descripción: limpiar saltos de línea extra
     final rawDesc = (m['description'] as String?) ?? '';
     final synopsis = rawDesc
-        .replaceAll(RegExp(r'<[^>]*>'), '') // quitar HTML residual
+        .replaceAll(RegExp(r'<[^>]*>'), '')
         .replaceAll(RegExp(r'\n{2,}'), '\n')
         .trim();
 
-    // Portada
     final cover = m['coverImage'] as Map<String, dynamic>;
     final coverUrl = (cover['extraLarge'] as String?) ??
         (cover['large'] as String?) ??
         '';
 
-    // Rating: AniList usa 0-100, convertimos a 0-10
     final rawScore = m['averageScore'] as int?;
     final rating = rawScore != null ? rawScore / 10.0 : 0.0;
 
-    // Año
     final startDate = m['startDate'] as Map<String, dynamic>?;
     final releaseYear = (startDate?['year'] as int?) ?? 0;
 
-    // Episodios
     final episodes = (m['episodes'] as int?) ?? 0;
-
-    // Status
     final rawStatus = (m['status'] as String?) ?? '';
     final status = _mapStatus(rawStatus);
 
-    // Géneros
     final genres = (m['genres'] as List<dynamic>?)
             ?.map((g) => g as String)
             .toList() ??
         [];
 
-    // Estudio principal
     final studiosData = m['studios'] as Map<String, dynamic>?;
-    final studioNodes =
-        (studiosData?['nodes'] as List<dynamic>?) ?? [];
+    final studioNodes = (studiosData?['nodes'] as List<dynamic>?) ?? [];
     final studio = studioNodes.isNotEmpty
         ? (studioNodes.first as Map<String, dynamic>)['name'] as String
         : 'Desconocido';
 
-    // Trailer
     final trailerData = m['trailer'] as Map<String, dynamic>?;
     String? trailerUrl;
     if (trailerData != null && trailerData['site'] == 'youtube') {
-      trailerUrl =
-          'https://www.youtube.com/embed/${trailerData['id']}';
+      trailerUrl = 'https://www.youtube.com/embed/${trailerData['id']}';
     }
 
-    // Tags / synonyms
     final tags = (m['synonyms'] as List<dynamic>?)
             ?.map((s) => s as String)
             .toList() ??
         [];
 
-    // Plataformas desde streamingEpisodes
-    final streaming =
-        (m['streamingEpisodes'] as List<dynamic>?) ?? [];
+    final streaming = (m['streamingEpisodes'] as List<dynamic>?) ?? [];
     final platforms = streaming
         .map((e) => (e as Map<String, dynamic>)['site'] as String)
         .toSet()
@@ -223,19 +214,13 @@ class AniListService {
     );
   }
 
-  // ── Mapear status de AniList → texto de la app ────────────
   String _mapStatus(String raw) {
     switch (raw) {
-      case 'RELEASING':
-        return 'En Emisión';
-      case 'FINISHED':
-        return 'Finalizado';
-      case 'NOT_YET_RELEASED':
-        return 'Próximamente';
-      case 'CANCELLED':
-        return 'Cancelado';
-      default:
-        return raw;
+      case 'RELEASING':        return 'En Emisión';
+      case 'FINISHED':         return 'Finalizado';
+      case 'NOT_YET_RELEASED': return 'Próximamente';
+      case 'CANCELLED':        return 'Cancelado';
+      default:                 return raw;
     }
   }
 }

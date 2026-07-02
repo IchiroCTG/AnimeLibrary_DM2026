@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 import 'navigation/app_routes.dart';
+import 'services/background_sync_service.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/anime_viewmodel.dart';
 import 'viewmodels/favorites_viewmodel.dart';
@@ -21,6 +24,20 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Notificaciones locales: canal + permisos.
+  await NotificationService.instance.init();
+  await NotificationService.instance.requestPermissions();
+
+  // Background Task: sincroniza el catálogo cada 15 min aunque la app
+  // esté cerrada, y notifica si aparece contenido nuevo.
+  // Se respeta la preferencia guardada por el usuario en Ajustes.
+  await BackgroundSyncService.initialize();
+  final prefs = await SharedPreferences.getInstance();
+  final notificationsEnabled = prefs.getBool('profile:notifications') ?? true;
+  if (notificationsEnabled) {
+    await BackgroundSyncService.registerPeriodicSync();
+  }
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

@@ -5,6 +5,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/background_sync_service.dart';
+
 enum ProfileState { initial, loading, loaded, error }
 
 class ProfileViewModel extends ChangeNotifier {
@@ -93,6 +95,14 @@ class ProfileViewModel extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyNotifications, _notifications);
+
+    // El switch controla la tarea real de sincronización en segundo
+    // plano, no solo una preferencia decorativa.
+    if (_notifications) {
+      await BackgroundSyncService.registerPeriodicSync();
+    } else {
+      await BackgroundSyncService.cancelSync();
+    }
   }
 
   Future<void> setLanguage(String lang) async {

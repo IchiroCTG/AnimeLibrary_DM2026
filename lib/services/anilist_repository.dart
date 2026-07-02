@@ -4,66 +4,72 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/anime.dart';
 import 'anilist_service.dart';
 
-/// Repositorio con paginación y caché offline.
-/// Estrategia Offline-First:
-///   1. Intenta API → guarda en caché.
-///   2. Sin red → retorna última caché válida.
-///   3. Sin caché → lista vacía.
 class AniListRepository {
   static const _keyCatalog   = 'cache:anilist:catalog';
   static const _keyTimestamp = 'cache:anilist:timestamp';
-  static const _cacheTtlMs   = 3600000; // 1 hora
-  static const _perPage      = 50;
+  static const _cacheTtlMs   = 3600000;
 
   final AniListService _service;
 
   AniListRepository({AniListService? service})
       : _service = service ?? AniListService();
 
-  // ── Página inicial (refresh o primer arranque) ────────────
-  Future<List<Anime>> getCatalog({bool forceRefresh = false}) async {
+  // ── Catálogo inicial ──────────────────────────────────────
+  Future<({List<Anime> animes, bool hasNextPage})> getCatalog({
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh && await _isCacheValid()) {
       final cached = await _loadFromCache();
-      if (cached != null && cached.isNotEmpty) return cached;
+      if (cached != null && cached.isNotEmpty) {
+        return (animes: cached, hasNextPage: true);
+      }
     }
 
     try {
-      final animes =
-          await _service.fetchCatalog(page: 1, perPage: _perPage);
-      await _saveToCache(animes);
-      return animes;
+      final result = await _service.fetchCatalog(page: 1, perPage: 50);
+      await _saveToCache(result.animes);
+      return result;
     } catch (_) {
       final cached = await _loadFromCache();
-      return cached ?? [];
+      return (animes: cached ?? [], hasNextPage: false);
     }
   }
 
-  // ── Cargar página adicional (scroll infinito) ─────────────
-  Future<List<Anime>> loadPage(int page) async {
+  // ── Página adicional del catálogo ─────────────────────────
+  Future<({List<Anime> animes, bool hasNextPage})> loadPage(int page) async {
     try {
-      return await _service.fetchCatalog(page: page, perPage: _perPage);
+      return await _service.fetchCatalog(page: page, perPage: 50);
     } catch (_) {
-      return [];
+      return (animes: <Anime>[], hasNextPage: false);
     }
   }
 
-  // ── Búsqueda ──────────────────────────────────────────────
-  Future<List<Anime>> search(String query, {String? genre}) async {
+  // ── Búsqueda paginada ─────────────────────────────────────
+  Future<({List<Anime> animes, bool hasNextPage})> search(
+    String query, {
+    String? genre,
+    int page = 1,
+  }) async {
     try {
-      return await _service.search(query, genre: genre);
+      return await _service.search(query, genre: genre, page: page);
     } catch (_) {
-      final cached = await _loadFromCache();
-      if (cached == null) return [];
-      final q = query.toLowerCase();
-      return cached.where((a) {
-        final matchQuery = q.isEmpty ||
-            a.title.toLowerCase().contains(q) ||
-            a.originalTitle.toLowerCase().contains(q) ||
-            a.tags.any((t) => t.toLowerCase().contains(q));
-        final matchGenre =
-            genre == null || a.genres.contains(genre);
-        return matchQuery && matchGenre;
-      }).toList();
+      // Offline: filtrar sobre caché local solo en página 1
+      if (page == 1) {
+        final cached = await _loadFromCache();
+        if (cached != null) {
+          final q = query.toLowerCase();
+          final filtered = cached.where((a) {
+            final matchQ = q.isEmpty ||
+                a.title.toLowerCase().contains(q) ||
+                a.originalTitle.toLowerCase().contains(q) ||
+                a.tags.any((t) => t.toLowerCase().contains(q));
+            final matchG = genre == null || a.genres.contains(genre);
+            return matchQ && matchG;
+          }).toList();
+          return (animes: filtered, hasNextPage: false);
+        }
+      }
+      return (animes: <Anime>[], hasNextPage: false);
     }
   }
 
@@ -97,7 +103,6 @@ class AniListRepository {
         _keyTimestamp, DateTime.now().millisecondsSinceEpoch);
   }
 
-  // ── Serialización ─────────────────────────────────────────
   Map<String, dynamic> _animeToMap(Anime a) => {
         'id': a.id,
         'title': a.title,

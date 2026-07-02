@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
-import '../models/anime.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/anime_viewmodel.dart';
@@ -18,51 +19,68 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _ctrl = TextEditingController();
-  List<Anime> _results = [];
+  final ScrollController _scrollCtrl = ScrollController();
+
   String? _selectedGenre;
   bool _hasSearched = false;
-  bool _isSearching = false;
 
-  Future<void> _search(String query) async {
-    setState(() {
-      _hasSearched = true;
-      _isSearching = true;
-    });
+  // Debounce para no lanzar request en cada tecla
+  Timer? _debounce;
 
-    try {
+  @override
+  void initState() {
+    super.initState();
+
+    _scrollCtrl.addListener(() {
       final vm = context.read<AnimeViewModel>();
-      // Usar el repositorio del viewmodel para buscar en API + caché
-      final results = await vm.searchAnimes(query, genre: _selectedGenre);
-      if (mounted) {
-        setState(() {
-          _results = results;
-          _isSearching = false;
-        });
+      if (_scrollCtrl.position.pixels >=
+              _scrollCtrl.position.maxScrollExtent * 0.9 &&
+          !vm.isLoadingMoreSearch &&
+          vm.hasMoreSearch) {
+        vm.loadMoreSearch();
       }
-    } catch (_) {
-      if (mounted) setState(() => _isSearching = false);
-    }
-  }
-
-  void _clearAll() {
-    setState(() {
-      _ctrl.clear();
-      _selectedGenre = null;
-      _results = [];
-      _hasSearched = false;
-      _isSearching = false;
     });
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
+    _scrollCtrl.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    if (value.isEmpty && _selectedGenre == null) {
+      setState(() => _hasSearched = false);
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _doSearch(value);
+    });
+  }
+
+  void _doSearch(String query) {
+    setState(() => _hasSearched = true);
+    context.read<AnimeViewModel>().performSearch(
+          query,
+          genre: _selectedGenre,
+        );
+  }
+
+  void _clearAll() {
+    _debounce?.cancel();
+    _ctrl.clear();
+    setState(() {
+      _selectedGenre = null;
+      _hasSearched   = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
+    final l  = AppLocalizations.of(context)!;
     final vm = context.watch<AnimeViewModel>();
 
     return Scaffold(
@@ -79,13 +97,7 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: TextField(
               controller: _ctrl,
-              onChanged: (v) {
-                if (v.isEmpty) {
-                  _clearAll();
-                } else {
-                  _search(v);
-                }
-              },
+              onChanged: _onChanged,
               style: AppTextStyles.searchText,
               decoration: InputDecoration(
                 hintText: l.searchHint,
@@ -102,7 +114,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
-          // ── Chips de género (dinámicos del catálogo) ──────
+          // ── Chips de género ───────────────────────────────
           if (vm.allGenres.isNotEmpty)
             SizedBox(
               height: 36,
@@ -121,7 +133,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         _selectedGenre =
                             _selectedGenre == genre ? null : genre;
                       });
-                      _search(_ctrl.text);
+                      _doSearch(_ctrl.text);
                     },
                   );
                 },
@@ -132,24 +144,17 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // ── Cuerpo ────────────────────────────────────────
           Expanded(
-            child: _isSearching
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primary),
-                  )
-                : !_hasSearched
-                    ? _buildSuggestions(l, vm)
-                    : _results.isEmpty
-                        ? _buildEmpty(l)
-                        : _buildResults(l),
+            child: !_hasSearched
+                ? _buildSuggestions(l, vm)
+                : _buildResults(l, vm),
           ),
         ],
       ),
     );
   }
 
+  // ── Sugerencias iniciales ─────────────────────────────────
   Widget _buildSuggestions(AppLocalizations l, AnimeViewModel vm) {
-    // Mostrar los primeros 6 animes del catálogo cargado como sugerencias
     final popular = vm.animes.take(6).toList();
 
     return ListView(
@@ -164,7 +169,7 @@ class _SearchScreenState extends State<SearchScreen> {
               .map((a) => GestureDetector(
                     onTap: () {
                       _ctrl.text = a.title;
-                      _search(a.title);
+                      _doSearch(a.title);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -199,7 +204,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     genre: g,
                     onTap: () {
                       setState(() => _selectedGenre = g);
-                      _search('');
+                      _doSearch('');
                     },
                   ))
               .toList(),
@@ -208,44 +213,52 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildEmpty(AppLocalizations l) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.search_off_rounded,
-              color: AppColors.textDisabled, size: 52),
-          const SizedBox(height: 12),
-          Text(l.searchNoResults, style: AppTextStyles.headline3),
-          const SizedBox(height: 4),
-          Text(l.searchNoResultsHint, style: AppTextStyles.bodySmall),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: _clearAll,
-            child: Text(l.searchClear),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Resultados con scroll infinito ────────────────────────
+  Widget _buildResults(AppLocalizations l, AnimeViewModel vm) {
+    final results = vm.searchResults;
 
-  Widget _buildResults(AppLocalizations l) {
+    // Spinner mientras llega la primera página
+    if (results.isEmpty && vm.isLoadingMoreSearch) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (results.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off_rounded,
+                color: AppColors.textDisabled, size: 52),
+            const SizedBox(height: 12),
+            Text(l.searchNoResults, style: AppTextStyles.headline3),
+            const SizedBox(height: 4),
+            Text(l.searchNoResultsHint, style: AppTextStyles.bodySmall),
+            const SizedBox(height: 16),
+            TextButton(onPressed: _clearAll, child: Text(l.searchClear)),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            _results.length == 1
-                ? l.homeResults(_results.length)
-                : l.homeResultsPlural(_results.length),
+            results.length == 1
+                ? l.homeResults(results.length)
+                : l.homeResultsPlural(results.length),
             style: AppTextStyles.label,
           ),
         ),
         const SizedBox(height: 10),
         Expanded(
           child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            controller: _scrollCtrl,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -253,8 +266,23 @@ class _SearchScreenState extends State<SearchScreen> {
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            itemCount: _results.length,
-            itemBuilder: (_, i) => AnimeCard(anime: _results[i]),
+            // +1 para el indicador al final
+            itemCount: results.length + (vm.hasMoreSearch ? 1 : 0),
+            itemBuilder: (_, i) {
+              if (i == results.length) {
+                // Indicador de carga al final
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: vm.isLoadingMoreSearch
+                        ? const CircularProgressIndicator(
+                            color: AppColors.primary, strokeWidth: 2)
+                        : const SizedBox.shrink(),
+                  ),
+                );
+              }
+              return AnimeCard(anime: results[i]);
+            },
           ),
         ),
       ],

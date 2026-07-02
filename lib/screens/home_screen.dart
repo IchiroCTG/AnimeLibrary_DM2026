@@ -32,9 +32,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_scrollCtrl.position.pixels >=
               _scrollCtrl.position.maxScrollExtent * 0.9 &&
           !vm.isLoadingMore &&
-          vm.hasMore &&
+          vm.hasMoreCatalog &&
           !vm.isLoading) {
-        vm.loadMore();
+        vm.loadMoreCatalog();
       }
     });
   }
@@ -382,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: vm.isLoadingMore
                           ? const CircularProgressIndicator(
                               color: AppColors.primary, strokeWidth: 2)
-                          : vm.hasMore
+                          : vm.hasMoreCatalog
                               ? const SizedBox.shrink()
                               : Text(
                                   '— Fin del catálogo —',

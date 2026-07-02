@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../navigation/app_routes.dart';
+import '../services/background_sync_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/favorites_viewmodel.dart';
@@ -313,6 +314,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onChanged: (_) => profileVm.toggleNotifications(),
                           activeColor: AppColors.primary,
                         ),
+                      ),
+                      _SettingItem(
+                        icon: Icons.sync_rounded,
+                        label: 'Probar sincronización en segundo plano',
+                        iconColor: AppColors.primary,
+                        onTap: () async {
+                          await BackgroundSyncService.runOnceForTesting();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Sincronización en segundo plano programada. '
+                                  'Revisa la notificación en unos segundos.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
                       ),
 
                       // ── Idioma (cambia el locale real de la app) ───

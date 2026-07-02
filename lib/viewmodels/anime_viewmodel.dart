@@ -17,32 +17,47 @@ class AnimeViewModel extends ChangeNotifier {
     _favoritesVm = vm;
   }
 
-  AnimeState _state       = AnimeState.initial;
-  List<Anime> _animes     = [];
-  List<Anime> _filtered   = [];
+  AnimeState _state = AnimeState.initial;
+  List<Anime> _animes   = [];
+  List<Anime> _filtered = [];
   String? _selectedGenre;
   String? _selectedPlatform;
-  String  _query          = '';
+  String  _query        = '';
   String? _errorMessage;
-  bool    _isOffline      = false;
+  bool    _isOffline    = false;
 
-  // ── Paginación ────────────────────────────────────────────
-  int  _currentPage  = 1;
-  bool _isLoadingMore = false;
-  bool _hasMore       = true;
+  // ── Paginación catálogo ───────────────────────────────────
+  int  _catalogPage      = 1;
+  bool _isLoadingMore    = false;
+  bool _hasMoreCatalog   = true;
 
-  // ── Getters ───────────────────────────────────────────────
-  AnimeState get state            => _state;
-  bool get isLoading              => _state == AnimeState.loading;
-  bool get hasError               => _state == AnimeState.error ||
-                                     _state == AnimeState.timeout;
-  bool get isOffline              => _isOffline;
-  bool get isLoadingMore          => _isLoadingMore;
-  bool get hasMore                => _hasMore;
-  String? get errorMessage        => _errorMessage;
-  String? get selectedGenre       => _selectedGenre;
-  String? get selectedPlatform    => _selectedPlatform;
-  String  get query               => _query;
+  // ── Paginación búsqueda ───────────────────────────────────
+  int          _searchPage        = 1;
+  bool         _isLoadingMoreSearch = false;
+  bool         _hasMoreSearch     = false;
+  List<Anime>  _searchResults     = [];
+  String       _lastQuery         = '';
+  String?      _lastGenre;
+
+  // ── Getters generales ─────────────────────────────────────
+  AnimeState get state         => _state;
+  bool get isLoading           => _state == AnimeState.loading;
+  bool get hasError            => _state == AnimeState.error ||
+                                  _state == AnimeState.timeout;
+  bool get isOffline           => _isOffline;
+  String? get errorMessage     => _errorMessage;
+  String? get selectedGenre    => _selectedGenre;
+  String? get selectedPlatform => _selectedPlatform;
+  String  get query            => _query;
+
+  // ── Getters scroll infinito catálogo ─────────────────────
+  bool get isLoadingMore  => _isLoadingMore;
+  bool get hasMoreCatalog => _hasMoreCatalog;
+
+  // ── Getters scroll infinito búsqueda ─────────────────────
+  bool        get isLoadingMoreSearch => _isLoadingMoreSearch;
+  bool        get hasMoreSearch       => _hasMoreSearch;
+  List<Anime> get searchResults       => _searchResults;
 
   bool get _hasFilter => _query.isNotEmpty ||
       _selectedGenre != null ||
@@ -50,33 +65,30 @@ class AnimeViewModel extends ChangeNotifier {
 
   List<Anime> get animes => _hasFilter ? _filtered : _animes;
 
-  List<String> get allGenres {
-    return _animes.expand((a) => a.genres).toSet().toList()..sort();
-  }
+  List<String> get allGenres =>
+      _animes.expand((a) => a.genres).toSet().toList()..sort();
 
-  List<String> get allPlatforms {
-    return _animes.expand((a) => a.platforms).toSet().toList()..sort();
-  }
+  List<String> get allPlatforms =>
+      _animes.expand((a) => a.platforms).toSet().toList()..sort();
 
-  // ── Carga inicial ─────────────────────────────────────────
+  // ── Carga inicial del catálogo ────────────────────────────
   Future<void> loadAnimes({bool forceRefresh = false}) async {
     if (_state == AnimeState.loading) return;
 
-    _state        = AnimeState.loading;
-    _isOffline    = false;
-    _errorMessage = null;
-    _currentPage  = 1;
-    _hasMore      = true;
+    _state         = AnimeState.loading;
+    _isOffline     = false;
+    _errorMessage  = null;
+    _catalogPage   = 1;
+    _hasMoreCatalog = true;
     notifyListeners();
 
     try {
       final result =
           await _repo.getCatalog(forceRefresh: forceRefresh);
-      _animes   = result;
-      _filtered = _applyFiltersTo(_animes);
-      _state    = AnimeState.loaded;
-      // Si la primera página vino completa (50), puede haber más
-      _hasMore  = result.length >= 50;
+      _animes        = result.animes;
+      _filtered      = _applyFiltersTo(_animes);
+      _state         = AnimeState.loaded;
+      _hasMoreCatalog = result.hasNextPage;
       _favoritesVm?.updateCatalog(_animes);
     } on Exception catch (e) {
       final msg = e.toString();
@@ -92,43 +104,89 @@ class AnimeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Cargar más (scroll infinito) ──────────────────────────
-  Future<void> loadMore() async {
-    // No cargar si: ya cargando, sin más páginas, hay filtro activo
-    if (_isLoadingMore || !_hasMore || _hasFilter) return;
+  // ── Más páginas del catálogo ──────────────────────────────
+  Future<void> loadMoreCatalog() async {
+    if (_isLoadingMore || !_hasMoreCatalog || _hasFilter) return;
 
     _isLoadingMore = true;
     notifyListeners();
 
     try {
-      _currentPage++;
-      final newAnimes = await _repo.loadPage(_currentPage);
-
-      if (newAnimes.isEmpty) {
-        _hasMore = false;
+      _catalogPage++;
+      final result = await _repo.loadPage(_catalogPage);
+      if (result.animes.isEmpty) {
+        _hasMoreCatalog = false;
       } else {
-        // Evitar duplicados por ID
         final existingIds = _animes.map((a) => a.id).toSet();
-        final unique =
-            newAnimes.where((a) => !existingIds.contains(a.id)).toList();
+        final unique = result.animes
+            .where((a) => !existingIds.contains(a.id))
+            .toList();
         _animes.addAll(unique);
-        _hasMore = newAnimes.length >= 50;
+        _hasMoreCatalog = result.hasNextPage;
         _favoritesVm?.updateCatalog(_animes);
       }
     } catch (_) {
-      _hasMore = false;
+      _hasMoreCatalog = false;
     }
 
     _isLoadingMore = false;
     notifyListeners();
   }
 
-  // ── Búsqueda directa en API ───────────────────────────────
-  Future<List<Anime>> searchAnimes(String query, {String? genre}) async {
-    return _repo.search(query, genre: genre);
+  // ── Búsqueda inicial ──────────────────────────────────────
+  Future<void> performSearch(String query, {String? genre}) async {
+    _lastQuery   = query;
+    _lastGenre   = genre;
+    _searchPage  = 1;
+    _searchResults = [];
+    _hasMoreSearch = false;
+    notifyListeners();
+
+    try {
+      final result = await _repo.search(query, genre: genre, page: 1);
+      _searchResults = result.animes;
+      _hasMoreSearch = result.hasNextPage;
+    } catch (_) {
+      _searchResults = [];
+      _hasMoreSearch = false;
+    }
+
+    notifyListeners();
   }
 
-  // ── Filtros ───────────────────────────────────────────────
+  // ── Más resultados de búsqueda ────────────────────────────
+  Future<void> loadMoreSearch() async {
+    if (_isLoadingMoreSearch || !_hasMoreSearch) return;
+
+    _isLoadingMoreSearch = true;
+    notifyListeners();
+
+    try {
+      _searchPage++;
+      final result = await _repo.search(
+        _lastQuery,
+        genre: _lastGenre,
+        page: _searchPage,
+      );
+      if (result.animes.isEmpty) {
+        _hasMoreSearch = false;
+      } else {
+        final existingIds = _searchResults.map((a) => a.id).toSet();
+        final unique = result.animes
+            .where((a) => !existingIds.contains(a.id))
+            .toList();
+        _searchResults.addAll(unique);
+        _hasMoreSearch = result.hasNextPage;
+      }
+    } catch (_) {
+      _hasMoreSearch = false;
+    }
+
+    _isLoadingMoreSearch = false;
+    notifyListeners();
+  }
+
+  // ── Filtros del catálogo ──────────────────────────────────
   void setGenre(String? genre) {
     _selectedGenre = genre;
     _filtered = _applyFiltersTo(_animes);

@@ -11,10 +11,12 @@ import '../screens/about_screen.dart';
 import '../screens/evaluation_screen.dart';
 import '../screens/list_screen.dart';
 import '../screens/poc/poc_screen.dart';
+import '../screens/login_screen.dart';
 import '../navigation/main_scalffold.dart';
 
 abstract final class AppRoutes {
   static const String splash      = '/';
+  static const String login       = '/login';
   static const String main        = '/main';
   static const String home        = '/home';
   static const String detail      = '/detail';
@@ -30,6 +32,8 @@ abstract final class AppRoutes {
     switch (settings.name) {
       case splash:
         return _fade(const SplashScreen());
+      case login:
+        return _fade(const LoginScreen());
       case main:
         return _fade(const MainScaffold());
       case home:
@@ -50,13 +54,12 @@ abstract final class AppRoutes {
       case evaluation:
         return _slide(const EvaluationScreen());
       case listScreen:
-        // ← datos por constructor, no por ModalRoute
         final args = settings.arguments as Map<String, dynamic>;
         final title  = args['title']  as String;
         final animes = args['animes'] as List<Anime>;
         return _slide(ListScreen(title: title, animes: animes));
       default:
-        return _fade(const HomeScreen());
+        return _fade(const SplashScreen());
     }
   }
 

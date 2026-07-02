@@ -9,6 +9,7 @@ import '../theme/app_text_styles.dart';
 import '../viewmodels/favorites_viewmodel.dart';
 import '../viewmodels/locale_viewmodel.dart';
 import '../viewmodels/profile_viewmodel.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -361,7 +362,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: () async {
+                            final navigator = Navigator.of(context);
+                            final authVm = context.read<AuthViewModel>();
+
+                            await authVm.signOut();
+
+                            if (!mounted) return;
+
+                            navigator.pushNamedAndRemoveUntil(
+                              AppRoutes.login,
+                              (route) => false,
+                            );
+                          },
                           icon: const Icon(Icons.logout_rounded,
                               color: AppColors.error),
                           label: Text(l.profileLogout,

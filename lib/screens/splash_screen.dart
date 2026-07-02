@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../navigation/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,8 +22,14 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     _timer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
+      if (!mounted) return;
+
+      final authVm = context.read<AuthViewModel>();
+
+      if (authVm.currentUser != null) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.main);
+      } else {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
       }
     });
   }

@@ -13,6 +13,7 @@ import 'viewmodels/favorites_viewmodel.dart';
 import 'viewmodels/home_viewmodel.dart';
 import 'viewmodels/locale_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
+import 'viewmodels/auth_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +56,7 @@ class LibraryAnimeApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider.value(value: animeVm),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
@@ -67,8 +69,6 @@ class LibraryAnimeApp extends StatelessWidget {
             title: 'Library Anime',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.dark,
-
-            // ── i18n ──────────────────────────────────────────
             locale: locVm.locale,
             supportedLocales: const [
               Locale('es'),
@@ -80,7 +80,6 @@ class LibraryAnimeApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-
             initialRoute: AppRoutes.splash,
             onGenerateRoute: AppRoutes.generateRoute,
           );

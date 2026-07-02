@@ -397,12 +397,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'🎌 {title} ({originalTitle})\n⭐ {rating}/10  ·  {episodes} eps  ·  {year}\n📺 Disponible en: {platforms}\n\nEncontrado en Library Anime 📱'**
   String detailShareText(
-    Object episodes,
-    Object originalTitle,
-    Object platforms,
-    Object rating,
     Object title,
+    Object originalTitle,
+    Object rating,
+    Object episodes,
     Object year,
+    Object platforms,
   );
 
   /// No description provided for @profileMember.
@@ -555,6 +555,90 @@ abstract class AppLocalizations {
   /// **'support@libraryanime.app'**
   String get helpContactBtn;
 
+  /// No description provided for @faq1Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué es Library Anime?'**
+  String get faq1Q;
+
+  /// No description provided for @faq1A.
+  ///
+  /// In es, this message translates to:
+  /// **'Library Anime es un catálogo unificado de anime. Te permite explorar miles de títulos, ver en qué plataformas de streaming están disponibles, leer sinopsis, filtrar por género o año, y guardar tus favoritos en listas personalizadas.'**
+  String get faq1A;
+
+  /// No description provided for @faq2Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo busco un anime específico?'**
+  String get faq2Q;
+
+  /// No description provided for @faq2A.
+  ///
+  /// In es, this message translates to:
+  /// **'Ve a la pestaña \"Buscar\" en el menú inferior. Puedes buscar por nombre, título alternativo (apodo en japonés o romaji), género, estudio de animación o año de emisión. Los resultados se actualizan en tiempo real.'**
+  String get faq2A;
+
+  /// No description provided for @faq3Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo sé en qué plataforma puedo ver un anime?'**
+  String get faq3Q;
+
+  /// No description provided for @faq3A.
+  ///
+  /// In es, this message translates to:
+  /// **'En la pantalla de detalle de cada anime encontrarás la sección \"Disponible en\", que muestra los íconos de las plataformas de streaming donde está disponible (Crunchyroll, Netflix, HiDive, Amazon Prime, Disney+).'**
+  String get faq3A;
+
+  /// No description provided for @faq4Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Puedo guardar animes en listas?'**
+  String get faq4Q;
+
+  /// No description provided for @faq4A.
+  ///
+  /// In es, this message translates to:
+  /// **'Sí. Desde la pantalla de detalle de cualquier anime puedes agregarlo a tus listas: Guardados, Viendo ahora, Completados o Pendientes. Accede a tus listas desde la sección Perfil.'**
+  String get faq4A;
+
+  /// No description provided for @faq5Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿La información está actualizada?'**
+  String get faq5Q;
+
+  /// No description provided for @faq5A.
+  ///
+  /// In es, this message translates to:
+  /// **'Library Anime utiliza datos de APIs oficiales (MyAnimeList / AniList) que se actualizan periódicamente. Los nuevos episodios y temporadas se reflejan automáticamente en el catálogo.'**
+  String get faq5A;
+
+  /// No description provided for @faq6Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Puedo usar la app sin conexión?'**
+  String get faq6Q;
+
+  /// No description provided for @faq6A.
+  ///
+  /// In es, this message translates to:
+  /// **'La búsqueda y el catálogo requieren conexión a internet. Sin embargo, tus listas personales y los animes que hayas visitado recientemente estarán disponibles en modo offline de forma limitada.'**
+  String get faq6A;
+
+  /// No description provided for @faq7Q.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo reporto un error o información incorrecta?'**
+  String get faq7Q;
+
+  /// No description provided for @faq7A.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes contactarnos a través de support@libraryanime.app o usar el botón \"Reportar\" dentro de la pantalla de detalle de cualquier anime. Respondemos en un plazo máximo de 48 horas hábiles.'**
+  String get faq7A;
+
   /// No description provided for @aboutTitle.
   ///
   /// In es, this message translates to:
@@ -576,8 +660,14 @@ abstract class AppLocalizations {
   /// No description provided for @aboutPurpose.
   ///
   /// In es, this message translates to:
-  /// **'Proposito de la aplicación'**
+  /// **'Propósito de la aplicación'**
   String get aboutPurpose;
+
+  /// No description provided for @aboutPurposeText.
+  ///
+  /// In es, this message translates to:
+  /// **'Library Anime nace de una necesidad real: la información sobre el anime está fragmentada en decenas de plataformas de streaming y sitios externos, obligando al usuario a abrir múltiples apps para encontrar un solo título.\n\nEsta aplicación centraliza el catálogo, indica la disponibilidad por plataforma, integra reseñas de la comunidad y permite filtrar por género, año y nombre —incluyendo títulos alternativos y apodos en japonés— todo desde una sola interfaz móvil.'**
+  String get aboutPurposeText;
 
   /// No description provided for @evalTitle.
   ///
@@ -656,6 +746,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu catálogo unificado de anime'**
   String get splashTagline;
+
+  /// No description provided for @statusAiring.
+  ///
+  /// In es, this message translates to:
+  /// **'En Emisión'**
+  String get statusAiring;
+
+  /// No description provided for @statusFinished.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizado'**
+  String get statusFinished;
+
+  /// No description provided for @statusUpcoming.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximamente'**
+  String get statusUpcoming;
+
+  /// No description provided for @airing.
+  ///
+  /// In es, this message translates to:
+  /// **'EN EMISIÓN'**
+  String get airing;
 }
 
 class _AppLocalizationsDelegate

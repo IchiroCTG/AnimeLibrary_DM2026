@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 import '../models/anime.dart';
-import '../models/anime_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../viewmodels/anime_viewmodel.dart';
 import '../widgets/anime_card.dart';
 import '../widgets/genre_chip.dart';
 
@@ -20,12 +21,27 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Anime> _results = [];
   String? _selectedGenre;
   bool _hasSearched = false;
+  bool _isSearching = false;
 
-  void _search(String query) {
+  Future<void> _search(String query) async {
     setState(() {
       _hasSearched = true;
-      _results = AnimeData.filterBy(query: query, genre: _selectedGenre);
+      _isSearching = true;
     });
+
+    try {
+      final vm = context.read<AnimeViewModel>();
+      // Usar el repositorio del viewmodel para buscar en API + caché
+      final results = await vm.searchAnimes(query, genre: _selectedGenre);
+      if (mounted) {
+        setState(() {
+          _results = results;
+          _isSearching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isSearching = false);
+    }
   }
 
   void _clearAll() {
@@ -34,6 +50,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _selectedGenre = null;
       _results = [];
       _hasSearched = false;
+      _isSearching = false;
     });
   }
 
@@ -46,6 +63,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final vm = context.watch<AnimeViewModel>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -61,7 +79,13 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: TextField(
               controller: _ctrl,
-              onChanged: _search,
+              onChanged: (v) {
+                if (v.isEmpty) {
+                  _clearAll();
+                } else {
+                  _search(v);
+                }
+              },
               style: AppTextStyles.searchText,
               decoration: InputDecoration(
                 hintText: l.searchHint,
@@ -78,47 +102,56 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
-          // ── Chips de género ───────────────────────────────
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: AnimeData.allGenres.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) {
-                final genre = AnimeData.allGenres[i];
-                return GenreChip(
-                  genre: genre,
-                  isSelected: _selectedGenre == genre,
-                  onTap: () {
-                    setState(() {
-                      _selectedGenre = _selectedGenre == genre ? null : genre;
-                    });
-                    _search(_ctrl.text);
-                  },
-                );
-              },
+          // ── Chips de género (dinámicos del catálogo) ──────
+          if (vm.allGenres.isNotEmpty)
+            SizedBox(
+              height: 36,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: vm.allGenres.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final genre = vm.allGenres[i];
+                  return GenreChip(
+                    genre: genre,
+                    isSelected: _selectedGenre == genre,
+                    onTap: () {
+                      setState(() {
+                        _selectedGenre =
+                            _selectedGenre == genre ? null : genre;
+                      });
+                      _search(_ctrl.text);
+                    },
+                  );
+                },
+              ),
             ),
-          ),
 
           const SizedBox(height: 16),
 
           // ── Cuerpo ────────────────────────────────────────
           Expanded(
-            child: !_hasSearched
-                ? _buildSuggestions(l)
-                : _results.isEmpty
-                    ? _buildEmpty(l)
-                    : _buildResults(l),
+            child: _isSearching
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary),
+                  )
+                : !_hasSearched
+                    ? _buildSuggestions(l, vm)
+                    : _results.isEmpty
+                        ? _buildEmpty(l)
+                        : _buildResults(l),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestions(AppLocalizations l) {
-    final popular = AnimeData.catalog.take(6).toList();
+  Widget _buildSuggestions(AppLocalizations l, AnimeViewModel vm) {
+    // Mostrar los primeros 6 animes del catálogo cargado como sugerencias
+    final popular = vm.animes.take(6).toList();
+
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
@@ -139,7 +172,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.surfaceVariant),
+                        border:
+                            Border.all(color: AppColors.surfaceVariant),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -160,7 +194,7 @@ class _SearchScreenState extends State<SearchScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: AnimeData.allGenres
+          children: vm.allGenres
               .map((g) => GenreChip(
                     genre: g,
                     onTap: () {
@@ -212,7 +246,8 @@ class _SearchScreenState extends State<SearchScreen> {
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               childAspectRatio: 0.58,
               crossAxisSpacing: 12,

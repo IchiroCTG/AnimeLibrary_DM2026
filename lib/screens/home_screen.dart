@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
-import '../models/anime_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../viewmodels/anime_viewmodel.dart';
@@ -18,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
+  final ScrollController _scrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -25,11 +25,24 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AnimeViewModel>().loadAnimes();
     });
+
+    // Detectar cuando el usuario llega al 90% del scroll
+    _scrollCtrl.addListener(() {
+      final vm = context.read<AnimeViewModel>();
+      if (_scrollCtrl.position.pixels >=
+              _scrollCtrl.position.maxScrollExtent * 0.9 &&
+          !vm.isLoadingMore &&
+          vm.hasMore &&
+          !vm.isLoading) {
+        vm.loadMore();
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -42,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           body: CustomScrollView(
+            controller: _scrollCtrl,
             slivers: [
               // ── AppBar ──────────────────────────────────────
               SliverAppBar(
@@ -49,12 +63,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: AppColors.background,
                 expandedHeight: 110,
                 flexibleSpace: FlexibleSpaceBar(
-                  titlePadding: const EdgeInsets.only(left: 16, bottom: 12),
+                  titlePadding:
+                      const EdgeInsets.only(left: 16, bottom: 12),
                   title: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l.homeSubtitle, style: AppTextStyles.bodySmall),
+                      Text(l.homeSubtitle,
+                          style: AppTextStyles.bodySmall),
                       Text(
                         l.homeTitle,
                         style: AppTextStyles.headline2.copyWith(
@@ -68,9 +84,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 actions: [
                   IconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    color: AppColors.textSecondary,
+                    onPressed: () => vm.loadAnimes(forceRefresh: true),
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.tune_rounded),
                     color: AppColors.textSecondary,
-                    onPressed: () => _showFilterSheet(context, vm, l),
+                    onPressed: () =>
+                        _showFilterSheet(context, vm, l),
                   ),
                 ],
               ),
@@ -79,9 +101,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Banner offline ─────────────────────────
+                    if (vm.isOffline)
+                      Container(
+                        margin:
+                            const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning
+                              .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: AppColors.warning
+                                  .withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.wifi_off_rounded,
+                                color: AppColors.warning, size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Modo offline — mostrando datos guardados',
+                              style: AppTextStyles.bodySmall
+                                  .copyWith(color: AppColors.warning),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     // ── Buscador ───────────────────────────────
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: TextField(
                         controller: _searchCtrl,
                         onChanged: vm.setQuery,
@@ -93,7 +145,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           suffixIcon: _searchCtrl.text.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear_rounded,
-                                      color: AppColors.textDisabled, size: 18),
+                                      color: AppColors.textDisabled,
+                                      size: 18),
                                   onPressed: () {
                                     _searchCtrl.clear();
                                     vm.clearFilters();
@@ -107,72 +160,84 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
 
                     // ── Chips género ───────────────────────────
-                    SizedBox(
-                      height: 36,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: AnimeData.allGenres.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (_, i) {
-                          final genre = AnimeData.allGenres[i];
-                          return GenreChip(
-                            genre: genre,
-                            isSelected: vm.selectedGenre == genre,
-                            onTap: () => vm.setGenre(
-                              vm.selectedGenre == genre ? null : genre,
-                            ),
-                          );
-                        },
+                    if (vm.allGenres.isNotEmpty)
+                      SizedBox(
+                        height: 36,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: vm.allGenres.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (_, i) {
+                            final genre = vm.allGenres[i];
+                            return GenreChip(
+                              genre: genre,
+                              isSelected: vm.selectedGenre == genre,
+                              onTap: () => vm.setGenre(
+                                vm.selectedGenre == genre
+                                    ? null
+                                    : genre,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
 
                     const SizedBox(height: 12),
 
                     // ── Chips plataforma ───────────────────────
-                    SizedBox(
-                      height: 36,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: AnimeData.allPlatforms.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (_, i) {
-                          final platform = AnimeData.allPlatforms[i];
-                          final isSelected = vm.selectedPlatform == platform;
-                          return GestureDetector(
-                            onTap: () => vm.setPlatform(
-                              isSelected ? null : platform,
-                            ),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.surfaceVariant,
-                                borderRadius: BorderRadius.circular(20),
+                    if (vm.allPlatforms.isNotEmpty)
+                      SizedBox(
+                        height: 36,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: vm.allPlatforms.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (_, i) {
+                            final platform = vm.allPlatforms[i];
+                            final isSelected =
+                                vm.selectedPlatform == platform;
+                            return GestureDetector(
+                              onTap: () => vm.setPlatform(
+                                isSelected ? null : platform,
                               ),
-                              child: Text(
-                                platform,
-                                style: AppTextStyles.label.copyWith(
+                              child: AnimatedContainer(
+                                duration:
+                                    const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
                                   color: isSelected
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
+                                      ? AppColors.primary
+                                      : AppColors.surfaceVariant,
+                                  borderRadius:
+                                      BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  platform,
+                                  style: AppTextStyles.label.copyWith(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
 
                     const SizedBox(height: 16),
 
                     // ── Header resultados ──────────────────────
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
                           Container(
@@ -190,7 +255,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     vm.query.isNotEmpty
                                 ? (vm.animes.length == 1
                                     ? l.homeResults(vm.animes.length)
-                                    : l.homeResultsPlural(vm.animes.length))
+                                    : l.homeResultsPlural(
+                                        vm.animes.length))
                                 : l.homeCatalog,
                             style: AppTextStyles.headline3,
                           ),
@@ -204,8 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vm.clearFilters();
                               },
                               child: Text(l.homeClear,
-                                  style: AppTextStyles.label
-                                      .copyWith(color: AppColors.primary)),
+                                  style: AppTextStyles.label.copyWith(
+                                      color: AppColors.primary)),
                             ),
                         ],
                       ),
@@ -215,20 +281,48 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // ── Loading ────────────────────────────────────
+              // ── Loading inicial ────────────────────────────
               if (vm.isLoading)
                 const SliverFillRemaining(
                   child: Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary),
                   ),
                 )
 
-              // ── Error ──────────────────────────────────────
+              // ── Error / Timeout ────────────────────────────
               else if (vm.hasError)
                 SliverFillRemaining(
                   child: Center(
-                    child: Text(vm.errorMessage ?? 'Error',
-                        style: AppTextStyles.bodyMedium),
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            vm.state == AnimeState.timeout
+                                ? Icons.timer_off_rounded
+                                : Icons.cloud_off_rounded,
+                            color: AppColors.textDisabled,
+                            size: 52,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            vm.errorMessage ?? 'Error desconocido',
+                            style: AppTextStyles.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                vm.loadAnimes(forceRefresh: true),
+                            icon:
+                                const Icon(Icons.refresh_rounded),
+                            label: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 )
 
@@ -242,7 +336,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Icon(Icons.search_off_rounded,
                             color: AppColors.textDisabled, size: 48),
                         const SizedBox(height: 12),
-                        Text(l.homeNoResults, style: AppTextStyles.headline3),
+                        Text(l.homeNoResults,
+                            style: AppTextStyles.headline3),
                         const SizedBox(height: 4),
                         Text(l.homeNoResultsHint,
                             style: AppTextStyles.bodySmall),
@@ -260,12 +355,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
 
               // ── Grilla ────────────────────────────────────
-              else
+              else ...[
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => AnimeCard(anime: vm.animes[index]),
+                      (context, index) =>
+                          AnimeCard(anime: vm.animes[index]),
                       childCount: vm.animes.length,
                     ),
                     gridDelegate:
@@ -277,6 +373,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+
+                // ── Indicador "cargando más" ───────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: vm.isLoadingMore
+                          ? const CircularProgressIndicator(
+                              color: AppColors.primary, strokeWidth: 2)
+                          : vm.hasMore
+                              ? const SizedBox.shrink()
+                              : Text(
+                                  '— Fin del catálogo —',
+                                  style: AppTextStyles.bodySmall,
+                                ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -284,7 +399,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showFilterSheet(BuildContext context, AnimeViewModel vm, AppLocalizations l) {
+  void _showFilterSheet(
+      BuildContext context, AnimeViewModel vm, AppLocalizations l) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -296,7 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Filter Sheet ───────────────────────────────────────────
+// ── Filter Sheet ───────────────────────────────────────────────
 class _FilterSheet extends StatelessWidget {
   final AnimeViewModel vm;
   final AppLocalizations l;
@@ -326,12 +442,13 @@ class _FilterSheet extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: AnimeData.allGenres
+            children: vm.allGenres
                 .map((g) => GenreChip(
                       genre: g,
                       isSelected: vm.selectedGenre == g,
                       onTap: () {
-                        vm.setGenre(vm.selectedGenre == g ? null : g);
+                        vm.setGenre(
+                            vm.selectedGenre == g ? null : g);
                         Navigator.pop(context);
                       },
                     ))
@@ -343,7 +460,7 @@ class _FilterSheet extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: AnimeData.allPlatforms.map((p) {
+            children: vm.allPlatforms.map((p) {
               final isSelected = vm.selectedPlatform == p;
               return GestureDetector(
                 onTap: () {
@@ -352,8 +469,8 @@ class _FilterSheet extends StatelessWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary

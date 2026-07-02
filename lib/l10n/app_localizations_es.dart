@@ -166,12 +166,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String detailShareText(
-    Object episodes,
-    Object originalTitle,
-    Object platforms,
-    Object rating,
     Object title,
+    Object originalTitle,
+    Object rating,
+    Object episodes,
     Object year,
+    Object platforms,
   ) {
     return '🎌 $title ($originalTitle)\n⭐ $rating/10  ·  $episodes eps  ·  $year\n📺 Disponible en: $platforms\n\nEncontrado en Library Anime 📱';
   }
@@ -254,6 +254,55 @@ class AppLocalizationsEs extends AppLocalizations {
   String get helpContactBtn => 'support@libraryanime.app';
 
   @override
+  String get faq1Q => '¿Qué es Library Anime?';
+
+  @override
+  String get faq1A =>
+      'Library Anime es un catálogo unificado de anime. Te permite explorar miles de títulos, ver en qué plataformas de streaming están disponibles, leer sinopsis, filtrar por género o año, y guardar tus favoritos en listas personalizadas.';
+
+  @override
+  String get faq2Q => '¿Cómo busco un anime específico?';
+
+  @override
+  String get faq2A =>
+      'Ve a la pestaña \"Buscar\" en el menú inferior. Puedes buscar por nombre, título alternativo (apodo en japonés o romaji), género, estudio de animación o año de emisión. Los resultados se actualizan en tiempo real.';
+
+  @override
+  String get faq3Q => '¿Cómo sé en qué plataforma puedo ver un anime?';
+
+  @override
+  String get faq3A =>
+      'En la pantalla de detalle de cada anime encontrarás la sección \"Disponible en\", que muestra los íconos de las plataformas de streaming donde está disponible (Crunchyroll, Netflix, HiDive, Amazon Prime, Disney+).';
+
+  @override
+  String get faq4Q => '¿Puedo guardar animes en listas?';
+
+  @override
+  String get faq4A =>
+      'Sí. Desde la pantalla de detalle de cualquier anime puedes agregarlo a tus listas: Guardados, Viendo ahora, Completados o Pendientes. Accede a tus listas desde la sección Perfil.';
+
+  @override
+  String get faq5Q => '¿La información está actualizada?';
+
+  @override
+  String get faq5A =>
+      'Library Anime utiliza datos de APIs oficiales (MyAnimeList / AniList) que se actualizan periódicamente. Los nuevos episodios y temporadas se reflejan automáticamente en el catálogo.';
+
+  @override
+  String get faq6Q => '¿Puedo usar la app sin conexión?';
+
+  @override
+  String get faq6A =>
+      'La búsqueda y el catálogo requieren conexión a internet. Sin embargo, tus listas personales y los animes que hayas visitado recientemente estarán disponibles en modo offline de forma limitada.';
+
+  @override
+  String get faq7Q => '¿Cómo reporto un error o información incorrecta?';
+
+  @override
+  String get faq7A =>
+      'Puedes contactarnos a través de support@libraryanime.app o usar el botón \"Reportar\" dentro de la pantalla de detalle de cualquier anime. Respondemos en un plazo máximo de 48 horas hábiles.';
+
+  @override
   String get aboutTitle => 'Acerca de';
 
   @override
@@ -265,7 +314,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aboutBadge => 'Maqueta Funcional · PDS1 2026';
 
   @override
-  String get aboutPurpose => 'Proposito de la aplicación';
+  String get aboutPurpose => 'Propósito de la aplicación';
+
+  @override
+  String get aboutPurposeText =>
+      'Library Anime nace de una necesidad real: la información sobre el anime está fragmentada en decenas de plataformas de streaming y sitios externos, obligando al usuario a abrir múltiples apps para encontrar un solo título.\n\nEsta aplicación centraliza el catálogo, indica la disponibilidad por plataforma, integra reseñas de la comunidad y permite filtrar por género, año y nombre —incluyendo títulos alternativos y apodos en japonés— todo desde una sola interfaz móvil.';
 
   @override
   String get evalTitle => 'Evaluación Beta';
@@ -309,4 +362,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get splashTagline => 'Tu catálogo unificado de anime';
+
+  @override
+  String get statusAiring => 'En Emisión';
+
+  @override
+  String get statusFinished => 'Finalizado';
+
+  @override
+  String get statusUpcoming => 'Próximamente';
+
+  @override
+  String get airing => 'EN EMISIÓN';
 }

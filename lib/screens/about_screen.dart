@@ -29,8 +29,10 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text('Library Anime', style: AppTextStyles.headline2),
                 const SizedBox(height: 4),
-                Text(l.aboutVersion(_version, _year),
-                    style: AppTextStyles.bodySmall),
+                Text(
+                  l.aboutVersion(_version, _year),
+                  style: AppTextStyles.bodySmall,
+                ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -52,11 +54,12 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(l.aboutPurpose, style: AppTextStyles.headline3),
+          const SizedBox(height: 8),
           Text(
-            'Library Anime nace de una necesidad real: la información sobre el anime está fragmentada en decenas de plataformas de streaming y sitios externos, obligando al usuario a abrir múltiples apps para encontrar un solo título.\n\n'
-            'Esta aplicación centraliza el catálogo, indica la disponibilidad por plataforma, integra reseñas de la comunidad y permite filtrar por género, año y nombre —incluyendo títulos alternativos y apodos en japonés— todo desde una sola interfaz móvil.',
+            l.aboutPurposeText,
             style: AppTextStyles.bodySmall.copyWith(height: 1.7),
           ),
+          const SizedBox(height: 32),
         ],
       ),
     );

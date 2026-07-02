@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+
 import '../models/anime.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -6,8 +8,6 @@ import '../navigation/app_routes.dart';
 import 'rating_bar.dart';
 import 'genre_chip.dart';
 
-/// Tarjeta de anime para la grilla del catálogo.
-/// Al tocarla navega a DetailScreen pasando el objeto Anime.
 class AnimeCard extends StatelessWidget {
   final Anime anime;
 
@@ -15,6 +15,8 @@ class AnimeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
         context,
@@ -35,7 +37,6 @@ class AnimeCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Imagen de portada
                   Image.network(
                     anime.coverUrl,
                     fit: BoxFit.cover,
@@ -63,7 +64,9 @@ class AnimeCard extends StatelessWidget {
 
                   // Degradado inferior
                   Positioned(
-                    bottom: 0, left: 0, right: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
                     child: Container(
                       height: 60,
                       decoration: const BoxDecoration(
@@ -76,12 +79,14 @@ class AnimeCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Badge de estado (En emisión)
+                  // Badge de estado (En emisión) — localizado
                   if (anime.isAiring)
                     Positioned(
-                      top: 8, left: 8,
+                      top: 8,
+                      left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppColors.success,
                           borderRadius: BorderRadius.circular(4),
@@ -90,7 +95,8 @@ class AnimeCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 5, height: 5,
+                              width: 5,
+                              height: 5,
                               decoration: const BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
@@ -98,7 +104,7 @@ class AnimeCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'EN EMISIÓN',
+                              l.airing,
                               style: AppTextStyles.labelSmall.copyWith(
                                 color: Colors.white,
                                 fontSize: 9,
@@ -112,9 +118,11 @@ class AnimeCard extends StatelessWidget {
 
                   // Rating en esquina superior derecha
                   Positioned(
-                    top: 8, right: 8,
+                    top: 8,
+                    right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppColors.background.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(6),
@@ -132,7 +140,6 @@ class AnimeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título
                   Text(
                     anime.title,
                     style: AppTextStyles.cardTitle,
@@ -140,15 +147,11 @@ class AnimeCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-
-                  // Año · Episodios
                   Text(
                     '${anime.releaseYear}  ·  ${anime.episodes} eps.',
                     style: AppTextStyles.cardSubtitle,
                   ),
                   const SizedBox(height: 6),
-
-                  // Género principal
                   GenreChip(genre: anime.primaryGenre, small: true),
                 ],
               ),

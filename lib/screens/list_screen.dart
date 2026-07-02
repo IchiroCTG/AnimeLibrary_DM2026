@@ -33,7 +33,9 @@ class ListScreen extends StatelessWidget {
         title: Text(title, style: AppTextStyles.headline3),
         centerTitle: true,
       ),
-      body: animes.isEmpty ? _buildEmptyState(l) : _buildAnimeGrid(animes),
+      body: animes.isEmpty
+          ? _buildEmptyState(l)
+          : _buildAnimeGrid(animes),
     );
   }
 

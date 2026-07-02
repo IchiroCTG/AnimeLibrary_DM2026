@@ -13,7 +13,9 @@
   "homeSubtitle": "Library",
   "homeCatalog": "Full catalog",
   "homeResults": "{count} result",
+  "@homeResults": { "placeholders": { "count": { "type": "Object" } } },
   "homeResultsPlural": "{count} results",
+  "@homeResultsPlural": { "placeholders": { "count": { "type": "Object" } } },
   "homeClear": "Clear",
   "homeNoResults": "No results",
   "homeNoResultsHint": "Try a different filter or name",
@@ -53,8 +55,20 @@
   "detailCompleted": "Completed",
   "detailPending": "Pending",
   "detailSavedMsg": "{title} saved to your list",
+  "@detailSavedMsg": { "placeholders": { "title": { "type": "Object" } } },
   "detailRemovedMsg": "{title} removed from your list",
+  "@detailRemovedMsg": { "placeholders": { "title": { "type": "Object" } } },
   "detailShareText": "🎌 {title} ({originalTitle})\n⭐ {rating}/10  ·  {episodes} eps  ·  {year}\n📺 Available on: {platforms}\n\nFound on Library Anime 📱",
+  "@detailShareText": {
+    "placeholders": {
+      "title": { "type": "Object" },
+      "originalTitle": { "type": "Object" },
+      "rating": { "type": "Object" },
+      "episodes": { "type": "Object" },
+      "year": { "type": "Object" },
+      "platforms": { "type": "Object" }
+    }
+  },
 
   "profileMember": "Member since January 2026",
   "profileInLists": "In lists",
@@ -83,10 +97,32 @@
   "helpContactDesc": "Write to us directly and we'll get back to you shortly.",
   "helpContactBtn": "support@libraryanime.app",
 
+  "faq1Q": "What is Library Anime?",
+  "faq1A": "Library Anime is a unified anime catalog. It lets you explore thousands of titles, see which streaming platforms they're available on, read synopses, filter by genre or year, and save your favorites to personal lists.",
+  "faq2Q": "How do I search for a specific anime?",
+  "faq2A": "Go to the \"Search\" tab in the bottom menu. You can search by name, alternative title (Japanese nickname or romaji), genre, animation studio, or release year. Results update in real time.",
+  "faq3Q": "How do I know which platform streams an anime?",
+  "faq3A": "On each anime's detail screen you'll find the \"Available on\" section, which shows icons for the streaming platforms where it's available (Crunchyroll, Netflix, HiDive, Amazon Prime, Disney+).",
+  "faq4Q": "Can I save anime to lists?",
+  "faq4A": "Yes. From any anime's detail screen you can add it to your lists: Saved, Watching, Completed or Pending. Access your lists from the Profile section.",
+  "faq5Q": "Is the information up to date?",
+  "faq5A": "Library Anime uses data from official APIs (MyAnimeList / AniList) that are updated periodically. New episodes and seasons are automatically reflected in the catalog.",
+  "faq6Q": "Can I use the app offline?",
+  "faq6A": "Search and the catalog require an internet connection. However, your personal lists and recently visited anime will be available in offline mode in a limited capacity.",
+  "faq7Q": "How do I report an error or incorrect information?",
+  "faq7A": "You can contact us at support@libraryanime.app or use the \"Report\" button on any anime's detail screen. We respond within a maximum of 48 business hours.",
+
   "aboutTitle": "About",
   "aboutVersion": "Version {version} · {year}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": { "type": "Object" },
+      "year": { "type": "Object" }
+    }
+  },
   "aboutBadge": "Functional Mockup · PDS1 2026",
   "aboutPurpose": "App purpose",
+  "aboutPurposeText": "Library Anime was born from a real need: anime information is fragmented across dozens of streaming platforms and external sites, forcing users to open multiple apps to find a single title.\n\nThis application centralizes the catalog, shows platform availability, integrates community reviews, and allows filtering by genre, year, and name — including alternative titles and Japanese nicknames — all from a single mobile interface.",
 
   "evalTitle": "Beta Evaluation",
   "evalBanner": "Beta Testing",
@@ -102,5 +138,10 @@
   "listEmpty": "No anime in this list",
   "listEmptyHint": "Explore the main catalog to add your favorite series.",
 
-  "splashTagline": "Your unified anime catalog"
+  "splashTagline": "Your unified anime catalog",
+
+  "statusAiring": "Airing",
+  "statusFinished": "Finished",
+  "statusUpcoming": "Upcoming",
+  "airing": "AIRING"
 }

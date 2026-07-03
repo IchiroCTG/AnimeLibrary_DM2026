@@ -1,21 +1,13 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
+import 'dart:convert';
 
 import 'anilist_repository.dart';
 import 'notification_service.dart';
 
-/// Nombre único de la tarea periódica registrada en WorkManager.
 const String kCatalogSyncTask = 'catalog_sync_task';
 
-/// Punto de entrada requerido por WorkManager.
-///
-/// IMPORTANTE: esta función corre en un ISOLATE separado del isolate
-/// principal de la app (incluso con la app cerrada). Por eso:
-///  - Debe ser una función de nivel superior (top-level) o estática.
-///  - Debe llevar la anotación @pragma('vm:entry-point') para que el
-///    compilador AOT no la elimine en modo release.
-///  - No puede acceder a estado en memoria de la UI (Providers, etc.),
-///    solo a fuentes externas: red y almacenamiento local.
+
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -25,22 +17,11 @@ void callbackDispatcher() {
     return Future.value(true);
   });
 }
-
-/// Orquesta la sincronización periódica del catálogo en segundo plano.
-///
-/// Estrategia (Background Task en vez de Push real):
-///  1. WorkManager despierta este isolate cada ~15 min (mínimo permitido
-///     por Android para tareas periódicas).
-///  2. Se hace un forceRefresh contra la API REST de AniList.
-///  3. Se compara el set de IDs contra la última copia cacheada localmente
-///     (shared_preferences, la misma caché offline-first que ya usa
-///     AniListRepository).
-///  4. Si hay IDs nuevos -> se dispara una notificación local.
-///  5. La nueva copia queda guardada como caché válida para la próxima
-///     apertura de la app (esto también alimenta la estrategia
-///     Offline-First del indicador 9).
 class BackgroundSyncService {
   static const _keyKnownIds = 'sync:known_anime_ids';
+  static const _keyEpisdoCounts = 'sync:episodes_counts';
+  static const _keyListSaved = 'list:saved';
+  static const _keyListWatching = 'list:watching';
 
   static Future<void> initialize() async {
     await Workmanager().initialize(
@@ -72,12 +53,16 @@ class BackgroundSyncService {
 
     final previousIds = (prefs.getStringList(_keyKnownIds) ?? []).toSet();
 
+    final rawCounts = prefs.getString(_keyEpisdoCounts);
+    final Map<String, dynamic> previousCounts = rawCounts == null ? {} : jsonDecode(rawCounts) as Map<String, dynamic>;
+    
     final result = await repo.getCatalog(forceRefresh: true);
     final currentIds = result.animes.map((a) => a.id).toSet();
-
+    final Map<String, int> currentCounts = {for (var a in result.animes) a.id: a.episodes};
     // Primera corrida: solo se guarda el estado base, no se notifica.
     if (previousIds.isEmpty) {
       await prefs.setStringList(_keyKnownIds, currentIds.toList());
+      await prefs.setString(_keyEpisdoCounts, jsonEncode(currentCounts));
       return;
     }
 
@@ -99,17 +84,47 @@ class BackgroundSyncService {
       );
     }
 
+    final followedIds = {
+      ..._readCommaList(prefs, _keyListSaved), 
+      ..._readCommaList(prefs, _keyListWatching)
+    }; 
+
+    final animesConNuevoEpisodio = result.animes.where((a){
+      if (newIds.contains(a.id))return false; // ya se notificó como nuevo anime
+      if(!followedIds.contains(a.id)) return false; // no es un anime seguido
+      final _previousCount = previousCounts[a.id] ?? 0;
+      return _previousCount !=null && a.episodes > _previousCount;
+    }).toList();
+
+    if(animesConNuevoEpisodio.isNotEmpty){
+      final titulos = animesConNuevoEpisodio.map((a) => a.title).take(3).toList();
+      await NotificationService.instance.init();
+      await NotificationService.instance.showNewContentNotification(
+        title: animesConNuevoEpisodio.length == 1
+            ? 'Nuevo episodio disponible de ${titulos.first}'
+            : '${animesConNuevoEpisodio.length} animes con nuevos episodios',
+        body: titulos.join(', ')
+      );
+        
+    }
+
     await prefs.setStringList(_keyKnownIds, currentIds.toList());
+    await prefs.setString(_keyEpisdoCounts, jsonEncode(currentCounts));
   }
 
-  /// Utilidad de depuración: fuerza una ejecución inmediata (one-off) sin
-  /// esperar los 15 minutos del ciclo periódico. Útil para probar en la
-  /// exposición sin tener que esperar a que WorkManager dispare solo.
   static Future<void> runOnceForTesting() async {
     await Workmanager().registerOneOffTask(
       '${kCatalogSyncTask}_debug_${DateTime.now().millisecondsSinceEpoch}',
       kCatalogSyncTask,
       constraints: Constraints(networkType: NetworkType.connected),
     );
+  }
+
+  static Set<String> _readCommaList(SharedPreferences prefs, String key) {
+    final raw = prefs.getString(key);
+    if (raw == null || raw.isEmpty) {
+      return {};
+    }
+    return raw.split(',').toSet();
   }
 }

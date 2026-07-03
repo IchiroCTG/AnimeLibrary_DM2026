@@ -80,14 +80,23 @@ lib/
 ├── models/
 │   ├── anime.dart                 # Clase de dominio
 │   └── anime_data.dart            # Dataset + filterBy()
+├── l10n/
+│   ├──app_en.arb                  # Archivo base de incoporación de intercambio de palabras hacia el idioma ingles
+│   ├──app_es.arb                  # Archivo base de incoporación de intercambio de palabras hacia el idioma español
+│   ├──app_localizations_es.dart   # Archivo dart encargado de contener la traduccion en español de las variables intercambiables
+│   ├──app_localizations_en.dart   # Archivo dart encargado de contener la traduccion en ingles de las variables intercambiables
+│   └──app_localizations.dart      # Archivo dart encargado de contener las variables intercambiables que usan los archivos de sus respectivos idiomas.
 ├── viewmodels/
 │   ├── anime_viewmodel.dart       # Catálogo y filtros
 │   ├── favorites_viewmodel.dart   # Listas persistentes
+│   ├── auth_viewmodel.dart        # Sistema de Autenthicacion Firebase
 │   ├── profile_viewmodel.dart     # Perfil + imagen + configuración
+│   ├── locale_viewmodel.dart      # Idioma de la App
 │   └── home_viewmodel.dart        # Navegación bottom bar
 ├── screens/
 │   ├── splash_screen.dart
 │   ├── home_screen.dart
+│   ├── login_screen.dart
 │   ├── detail_screen.dart         # Share + botones de lista
 │   ├── search_screen.dart
 │   ├── profile_screen.dart        # Image picker + listas reales
@@ -97,6 +106,11 @@ lib/
 │   ├── about_screen.dart
 │   └── poc/
 │       └── poc_screen.dart        # Prueba de concepto Firestore
+├── services
+│   ├── anilist_repository.dart      # Solicitudes a la Api y Visual
+│   ├── anilist_service.dart         # Coneccion con la Api
+│   ├── background_sync_service.dart # Comparativa de informacion nueva
+│   └── notification_service.dart    # Informa los cambios detectado por background y notifica localmente
 ├── widgets/
 │   ├── anime_card.dart
 │   ├── genre_chip.dart

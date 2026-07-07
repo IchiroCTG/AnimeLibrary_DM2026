@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/anime.dart';
+import '../services/firestore_service.dart';
 
 /// Persiste las listas del usuario usando shared_preferences.
+/// Además sincroniza las listas del usuario autenticado en Firestore.
 /// Compatible con catálogo dinámico de AniList:
 /// guarda los IDs y recibe el catálogo actual para resolver los animes.
 class FavoritesViewModel extends ChangeNotifier {
@@ -16,6 +19,9 @@ class FavoritesViewModel extends ChangeNotifier {
   final Set<String> _watching  = {};
   final Set<String> _completed = {};
   final Set<String> _pending   = {};
+
+  final _firestore = FirestoreService();
+  final _auth = FirebaseAuth.instance;
 
   // Catálogo actual — se actualiza desde AnimeViewModel
   List<Anime> _catalog = [];
@@ -47,14 +53,25 @@ class FavoritesViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Cargar desde disco ────────────────────────────────────
+  // ── Cargar desde disco y Firestore ────────────────────────
   Future<void> load() async {
     if (_loaded) return;
+
     final prefs = await SharedPreferences.getInstance();
-    _saved    .addAll(_read(prefs, _keySaved));
-    _watching .addAll(_read(prefs, _keyWatching));
-    _completed.addAll(_read(prefs, _keyCompleted));
-    _pending  .addAll(_read(prefs, _keyPending));
+    _saved     .addAll(_read(prefs, _keySaved));
+    _watching  .addAll(_read(prefs, _keyWatching));
+    _completed .addAll(_read(prefs, _keyCompleted));
+    _pending   .addAll(_read(prefs, _keyPending));
+
+    if (_auth.currentUser != null) {
+      await _firestore.loadFavoritesInto(
+        saved: _saved,
+        watching: _watching,
+        completed: _completed,
+        pending: _pending,
+      );
+    }
+
     _loaded = true;
     notifyListeners();
   }
@@ -63,24 +80,28 @@ class FavoritesViewModel extends ChangeNotifier {
   Future<void> toggleSaved(String id) async {
     _toggle(_saved, id);
     await _persist(_keySaved, _saved);
+    await _syncFirestore(id, 'saved', _saved.contains(id));
     notifyListeners();
   }
 
   Future<void> toggleWatching(String id) async {
     _toggle(_watching, id);
     await _persist(_keyWatching, _watching);
+    await _syncFirestore(id, 'watching', _watching.contains(id));
     notifyListeners();
   }
 
   Future<void> toggleCompleted(String id) async {
     _toggle(_completed, id);
     await _persist(_keyCompleted, _completed);
+    await _syncFirestore(id, 'completed', _completed.contains(id));
     notifyListeners();
   }
 
   Future<void> togglePending(String id) async {
     _toggle(_pending, id);
     await _persist(_keyPending, _pending);
+    await _syncFirestore(id, 'pending', _pending.contains(id));
     notifyListeners();
   }
 
@@ -101,6 +122,16 @@ class FavoritesViewModel extends ChangeNotifier {
   Future<void> _persist(String key, Set<String> set) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, set.join(','));
+  }
+
+  Future<void> _syncFirestore(String id, String list, bool enabled) async {
+    if (_auth.currentUser == null) return;
+
+    if (enabled) {
+      await _firestore.addFavorite(id, list);
+    } else {
+      await _firestore.removeFavorite(id, list);
+    }
   }
 
   /// Resuelve IDs contra el catálogo dinámico actual.

@@ -92,15 +92,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         _loading = true;
                         _error = null;
                       });
+                      final navigator = Navigator.of(context);
 
                       final error = await authVm.register(
                         _emailController.text,
                         _passwordController.text,
                       );
 
+                      if (!mounted) return;
+
+                      if (error == null) {
+                        navigator.pushReplacementNamed(AppRoutes.main);
+                      } else {
+                        setState(() {
+                          _error = error;
+                        });
+                      }
+
                       setState(() {
                         _loading = false;
-                        _error = error;
                       });
                     },
               child: const Text('Registrarse'),

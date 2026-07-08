@@ -64,12 +64,16 @@ class FavoritesViewModel extends ChangeNotifier {
     _pending   .addAll(_read(prefs, _keyPending));
 
     if (_auth.currentUser != null) {
-      await _firestore.loadFavoritesInto(
-        saved: _saved,
-        watching: _watching,
-        completed: _completed,
-        pending: _pending,
-      );
+      try {
+        await _firestore.loadFavoritesInto(
+          saved: _saved,
+          watching: _watching,
+          completed: _completed,
+          pending: _pending,
+        );
+      } catch (e) {
+        debugPrint('No se pudieron cargar los favoritos desde Firestore: $e');
+      }
     }
 
     _loaded = true;
@@ -127,10 +131,14 @@ class FavoritesViewModel extends ChangeNotifier {
   Future<void> _syncFirestore(String id, String list, bool enabled) async {
     if (_auth.currentUser == null) return;
 
-    if (enabled) {
-      await _firestore.addFavorite(id, list);
-    } else {
-      await _firestore.removeFavorite(id, list);
+    try {
+      if (enabled) {
+        await _firestore.addFavorite(id, list);
+      } else {
+        await _firestore.removeFavorite(id, list);
+      }
+    } catch (e) {
+      debugPrint('No se pudo sincronizar el favorito con Firestore: $e');
     }
   }
 

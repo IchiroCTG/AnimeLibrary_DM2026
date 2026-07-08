@@ -378,21 +378,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 24),
 
                       // ── Cerrar sesión ──────────────────────────────
+                      // La navegación a Login ya no se hace aquí: el
+                      // listener de authStateChanges en main.dart la
+                      // maneja de forma centralizada para cualquier
+                      // pérdida de sesión (manual o no).
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: () async {
-                            final navigator = Navigator.of(context);
                             final authVm = context.read<AuthViewModel>();
-
                             await authVm.signOut();
-
-                            if (!mounted) return;
-
-                            navigator.pushNamedAndRemoveUntil(
-                              AppRoutes.login,
-                              (route) => false,
-                            );
                           },
                           icon: const Icon(Icons.logout_rounded,
                               color: AppColors.error),

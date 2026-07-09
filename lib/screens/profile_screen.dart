@@ -317,17 +317,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       _SettingItem(
                         icon: Icons.sync_rounded,
-                        label: 'Probar sincronización en segundo plano',
+                        label: l.profileSyncTest,
                         iconColor: AppColors.primary,
                         onTap: () async {
                           await BackgroundSyncService.runOnceForTesting();
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Sincronización en segundo plano programada. '
-                                  'Revisa la notificación en unos segundos.',
-                                ),
+                              SnackBar(
+                                content: Text(l.profileSyncSnackbar),
                               ),
                             );
                           }

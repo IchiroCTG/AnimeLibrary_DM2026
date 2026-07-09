@@ -17,11 +17,45 @@ void callbackDispatcher() {
     return Future.value(true);
   });
 }
+/// Textos de las notificaciones de sincronización.
+///
+/// [BackgroundSyncService] corre dentro de un isolate separado registrado
+/// por WorkManager, por lo que NO tiene acceso a un [BuildContext] ni,
+/// por lo tanto, a `AppLocalizations.of(context)`. Para respetar el idioma
+/// elegido por el usuario igual, leemos directamente la preferencia
+/// guardada en SharedPreferences (misma clave que usa LocaleViewModel)
+/// y elegimos el texto correspondiente aquí.
+class _SyncNotificationStrings {
+  final bool isEnglish;
+  const _SyncNotificationStrings(this.isEnglish);
+
+  String newAnimeTitle(int count) {
+    if (count == 1) {
+      return isEnglish ? 'New anime available' : 'Nuevo anime disponible';
+    }
+    return isEnglish
+        ? '$count new anime available'
+        : '$count animes nuevos disponibles';
+  }
+
+  String newEpisodeTitle(int count, String firstTitle) {
+    if (count == 1) {
+      return isEnglish
+          ? 'New episode available for $firstTitle'
+          : 'Nuevo episodio disponible de $firstTitle';
+    }
+    return isEnglish
+        ? '$count anime with new episodes'
+        : '$count animes con nuevos episodios';
+  }
+}
+
 class BackgroundSyncService {
   static const _keyKnownIds = 'sync:known_anime_ids';
   static const _keyEpisdoCounts = 'sync:episodes_counts';
   static const _keyListSaved = 'list:saved';
   static const _keyListWatching = 'list:watching';
+  static const _keyLocale = 'app:locale';
 
   static Future<void> initialize() async {
     await Workmanager().initialize(
@@ -50,6 +84,8 @@ class BackgroundSyncService {
   static Future<void> syncCatalogAndNotify() async {
     final prefs = await SharedPreferences.getInstance();
     final repo = AniListRepository();
+    final localeCode = prefs.getString(_keyLocale) ?? 'es';
+    final l10n = _SyncNotificationStrings(localeCode == 'en');
 
     final previousIds = (prefs.getStringList(_keyKnownIds) ?? []).toSet();
 
@@ -77,9 +113,7 @@ class BackgroundSyncService {
 
       await NotificationService.instance.init();
       await NotificationService.instance.showNewContentNotification(
-        title: newIds.length == 1
-            ? 'Nuevo anime disponible'
-            : '${newIds.length} animes nuevos disponibles',
+        title: l10n.newAnimeTitle(newIds.length),
         body: newTitles.join(', '),
       );
     }
@@ -100,9 +134,10 @@ class BackgroundSyncService {
       final titulos = animesConNuevoEpisodio.map((a) => a.title).take(3).toList();
       await NotificationService.instance.init();
       await NotificationService.instance.showNewContentNotification(
-        title: animesConNuevoEpisodio.length == 1
-            ? 'Nuevo episodio disponible de ${titulos.first}'
-            : '${animesConNuevoEpisodio.length} animes con nuevos episodios',
+        title: l10n.newEpisodeTitle(
+          animesConNuevoEpisodio.length,
+          titulos.first,
+        ),
         body: titulos.join(', ')
       );
         

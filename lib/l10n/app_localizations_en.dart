@@ -206,6 +206,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNotifications => 'Notifications';
 
   @override
+  String get profileSyncTest => 'Test background sync';
+
+  @override
+  String get profileSyncSnackbar =>
+      'Background sync scheduled. Check the notification in a few seconds.';
+
+  @override
+  String get syncNewAnimeSingle => 'New anime available';
+
+  @override
+  String syncNewAnimePlural(Object count) {
+    return '$count new anime available';
+  }
+
+  @override
+  String syncNewEpisodeSingle(Object title) {
+    return 'New episode available for $title';
+  }
+
+  @override
+  String syncNewEpisodePlural(Object count) {
+    return '$count anime with new episodes';
+  }
+
+  @override
   String get profileLanguage => 'Preferred language';
 
   @override
